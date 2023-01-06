@@ -2,27 +2,29 @@ package main
 
 import (
 	"context"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/runtime/graphx"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/runtime/xlangx"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/typex"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/util/reflectx"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/io/textio"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/options/jobopts"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/runners/universal/runnerlib"
 	"log"
 
 	"github.com/apache/beam/sdks/v2/go/pkg/beam"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/runtime/graphx"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/runtime/xlangx"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/io/textio"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/options/jobopts"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/runners/universal/extworker"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/runners/universal/runnerlib"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/transforms/stats"
-	"github.com/apache/beam/stitch/translation/internal/wordcount"
-
 	_ "github.com/apache/beam/sdks/v2/go/pkg/beam/core/runtime/harness/init"
 	_ "github.com/apache/beam/sdks/v2/go/pkg/beam/io/filesystem/gcs"
 )
 
 var (
-	source   = "gs://apache-beam-samples/shakespeare/*"
-	output   = "gs://6567d1de-5fe2-46de-b420-e1b8631e1cb0/output"
+	source = "gs://apache-beam-samples/shakespeare/*"
+	//output   = "gs://6567d1de-5fe2-46de-b420-e1b8631e1cb0/output"
+	output   = "gs://16fc1003-5311-4d63-b01a-cbb2f62a8e23/output"
 	endpoint = "localhost:8099"
-	worker   = "localhost:39311"
+
+	expansionAddress = "localhost:8080"
+
+	worker = "localhost:58721"
 )
 
 func main() {
@@ -33,15 +35,20 @@ func main() {
 }
 
 func run(ctx context.Context) error {
-	*jobopts.EnvironmentType = "LOOPBACK"
-	srv, err := extworker.StartLoopback(ctx, 0)
-	if err != nil {
-		return err
+	*jobopts.EnvironmentType = "external"
+	//srv, err := extworker.StartLoopback(ctx, 0)
+	//if err != nil {
+	//	return err
+	//}
+	//defer srv.Stop(ctx)
+	//getEnvCfg := srv.EnvironmentConfig
+	getEnvCfg := func(ctx context.Context) string {
+		return worker
 	}
-	defer srv.Stop(ctx)
-	getEnvCfg := srv.EnvironmentConfig
 	envUrn := jobopts.GetEnvironmentUrn(ctx)
-	p := wordcountPipeline()
+
+	p := buildPipeline()
+
 	edges, _, err := p.Build()
 	if err != nil {
 		return err
@@ -50,6 +57,7 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	environment, err := graphx.CreateEnvironment(ctx, envUrn, getEnvCfg)
 	if err != nil {
 		return err
@@ -69,24 +77,21 @@ func run(ctx context.Context) error {
 	_, err = runnerlib.Execute(ctx, pp, endpoint, opt, *jobopts.Async)
 
 	return err
-	//return beamx.Run(ctx, p)
 }
-func wordcountPipeline() *beam.Pipeline {
+
+func buildPipeline() *beam.Pipeline {
 	p, s := beam.NewPipelineWithRoot()
 
-	lines := textio.Read(s.Scope("ReadFromSource"), source)
+	readPl := beam.CrossLanguagePayload(&struct {
+		FilenamePrefix string
+	}{
+		FilenamePrefix: source,
+	})
 
-	tokens := wordcount.Split(s, lines)
+	readIn := beam.UnnamedInput(beam.Impulse(s))
+	readOutT := beam.UnnamedOutput(typex.New(reflectx.String))
+	read := beam.CrossLanguage(s, "beam:transform:org.apache.beam.stitch:file:read:v1", readPl, expansionAddress, readIn, readOutT)
 
-	nonEmptyTokens := wordcount.ExcludeEmpty(s, tokens)
-
-	lowerCaseTokens := wordcount.ToLower(s, nonEmptyTokens)
-
-	countPerToken := stats.Count(s.Scope("CountPerToken"), lowerCaseTokens)
-
-	formatCounts := wordcount.FormatCounts(s, countPerToken)
-
-	textio.Write(s.Scope("OutputResult"), output, formatCounts)
-
+	textio.Write(s, output, read[beam.UnnamedOutputTag()])
 	return p
 }

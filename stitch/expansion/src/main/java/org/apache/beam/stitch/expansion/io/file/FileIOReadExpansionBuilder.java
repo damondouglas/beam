@@ -27,10 +27,10 @@ import org.apache.beam.sdk.values.PCollection;
 
 public class FileIOReadExpansionBuilder
     implements ExternalTransformBuilder<
-        FileIOReadExpansionConfiguration, PBegin, PCollection<String>> {
+        FileIOReadExpansionConfiguration, PCollection<byte[]>, PCollection<String>> {
 
   @Override
-  public PTransform<PBegin, PCollection<String>> buildExternal(
+  public PTransform<PCollection<byte[]>, PCollection<String>> buildExternal(
       FileIOReadExpansionConfiguration configuration) {
     Optional<FileIOReadExpansionConfiguration> safeConfiguration =
         Optional.ofNullable(configuration);

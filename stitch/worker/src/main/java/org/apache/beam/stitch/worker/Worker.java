@@ -5,9 +5,11 @@ import static org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Prec
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.apache.beam.fn.harness.ExternalWorkerService;
+import org.apache.beam.runners.core.construction.Environments;
 import org.apache.beam.sdk.fn.server.GrpcFnServer;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.options.PortablePipelineOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -22,7 +22,7 @@ import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 
-public class FileIOReadExpansion extends PTransform<PBegin, PCollection<String>> {
+public class FileIOReadExpansion extends PTransform<PCollection<byte[]>, PCollection<String>> {
 
   final String filenamePrefix;
 
@@ -31,7 +31,7 @@ public class FileIOReadExpansion extends PTransform<PBegin, PCollection<String>>
   }
 
   @Override
-  public PCollection<String> expand(PBegin input) {
-    return input.apply("read", TextIO.read().from(filenamePrefix));
+  public PCollection<String> expand(PCollection<byte[]> input) {
+    return input.getPipeline().apply("read", TextIO.read().from(filenamePrefix));
   }
 }
