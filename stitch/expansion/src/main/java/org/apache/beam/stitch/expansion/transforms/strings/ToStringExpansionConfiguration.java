@@ -17,18 +17,4 @@
  */
 package org.apache.beam.stitch.expansion.transforms.strings;
 
-import com.google.auto.service.AutoService;
-import java.util.Map;
-import org.apache.beam.sdk.expansion.ExternalTransformRegistrar;
-import org.apache.beam.sdk.transforms.ExternalTransformBuilder;
-import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableMap;
-
-@AutoService(ExternalTransformRegistrar.class)
-public class ToJsonExpansionRegistrar implements ExternalTransformRegistrar {
-  static final String URN = "beam:transform:org.apache.beam.stitch:strings:tojson:v1";
-
-  @Override
-  public Map<String, ExternalTransformBuilder<?, ?, ?>> knownBuilderInstances() {
-    return ImmutableMap.of(URN, new ToJsonExpansionBuilder());
-  }
-}
+public class ToStringExpansionConfiguration {}

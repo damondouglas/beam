@@ -19,14 +19,15 @@ package org.apache.beam.stitch.expansion.transforms.strings;
 
 import org.apache.beam.sdk.transforms.ExternalTransformBuilder;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.Row;
 
 public class CountExpansionBuilder
     implements ExternalTransformBuilder<
-        CountExpansionConfiguration, PCollection<String>, PCollection<Row>> {
+        CountExpansionConfiguration, PCollection<String>, PCollection<KV<String, Long>>> {
   @Override
-  public PTransform<PCollection<String>, PCollection<Row>> buildExternal(
+  public PTransform<PCollection<String>, PCollection<KV<String, Long>>> buildExternal(
       CountExpansionConfiguration configuration) {
     return new CountExpansion();
   }

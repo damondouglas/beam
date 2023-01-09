@@ -27,10 +27,10 @@ import org.apache.beam.sdk.values.PDone;
 
 public class FileIOWriteExpansionBuilder
     implements ExternalTransformBuilder<
-        FileIOWriteExpansionConfiguration, PCollection<String>, PDone> {
+        FileIOWriteExpansionConfiguration, PCollection<String>, PCollection<String>> {
 
   @Override
-  public PTransform<PCollection<String>, PDone> buildExternal(
+  public PTransform<PCollection<String>, PCollection<String>> buildExternal(
       FileIOWriteExpansionConfiguration configuration) {
     Optional<FileIOWriteExpansionConfiguration> safeConfiguration =
         Optional.ofNullable(configuration);

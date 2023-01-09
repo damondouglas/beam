@@ -19,10 +19,11 @@ package org.apache.beam.stitch.expansion.io.file;
 
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
 
-public class FileIOWriteExpansion extends PTransform<PCollection<String>, PDone> {
+public class FileIOWriteExpansion extends PTransform<PCollection<String>, PCollection<String>> {
 
   final String filenamePrefix;
 
@@ -31,8 +32,10 @@ public class FileIOWriteExpansion extends PTransform<PCollection<String>, PDone>
   }
 
   @Override
-  public PDone expand(PCollection<String> input) {
-    input.apply("write", TextIO.write().to(filenamePrefix));
-    return PDone.in(input.getPipeline());
+  public PCollection<String> expand(PCollection<String> input) {
+    return input.apply(
+        "write",
+        TextIO.write().to(filenamePrefix).<String>withOutputFilenames()).getPerDestinationOutputFilenames()
+        .apply("names", Values.create());
   }
 }

@@ -17,22 +17,18 @@
  */
 package org.apache.beam.stitch.expansion.transforms.strings;
 
-import static org.apache.beam.sdk.values.TypeDescriptors.strings;
-
-import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.ExternalTransformBuilder;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.Row;
 
-public class FormatExpansion extends PTransform<PCollection<Object>, PCollection<String>> {
-  final String format;
-
-  public FormatExpansion(String format) {
-    this.format = format;
-  }
-
+public class ToStringExpansionBuilder
+    implements ExternalTransformBuilder<
+    ToStringExpansionConfiguration, PCollection<KV<String, Long>>, PCollection<String>> {
   @Override
-  public PCollection<String> expand(PCollection<Object> input) {
-    return input.apply(
-        "format", MapElements.into(strings()).via((Object obj) -> String.format(format, obj)));
+  public PTransform<PCollection<KV<String, Long>>, PCollection<String>> buildExternal(
+      ToStringExpansionConfiguration configuration) {
+    return new ToStringExpansion();
   }
 }

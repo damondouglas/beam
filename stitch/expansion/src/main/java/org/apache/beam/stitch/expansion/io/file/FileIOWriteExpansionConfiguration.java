@@ -26,7 +26,7 @@ public class FileIOWriteExpansionConfiguration {
     this.filenamePrefix = "";
   }
 
-  public void setPrefix(@NonNull String filenamePrefix) {
+  public void setFilenamePrefix(@NonNull String filenamePrefix) {
     this.filenamePrefix = filenamePrefix;
   }
 }

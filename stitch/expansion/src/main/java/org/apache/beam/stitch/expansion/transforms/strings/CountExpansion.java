@@ -21,6 +21,9 @@ import static org.apache.beam.sdk.values.TypeDescriptors.rows;
 import static org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Preconditions.checkState;
 
 import java.util.Optional;
+import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
+import org.apache.beam.sdk.coders.VarLongCoder;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.schemas.Schema.Field;
 import org.apache.beam.sdk.schemas.Schema.FieldType;
@@ -31,29 +34,11 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.Row;
 
-public class CountExpansion extends PTransform<PCollection<String>, PCollection<Row>> {
-
-  static final Field KEY_FIELD = Field.of("key", FieldType.STRING);
-  static final Field VALUE_FIELD = Field.of("value", FieldType.INT64);
-
-  static final Schema COUNT_EXPANSION_SCHEMA = Schema.of(KEY_FIELD, VALUE_FIELD);
+public class CountExpansion extends PTransform<PCollection<String>, PCollection<KV<String, Long>>> {
 
   @Override
-  public PCollection<Row> expand(PCollection<String> input) {
+  public PCollection<KV<String, Long>> expand(PCollection<String> input) {
     return input
-        .apply("Count Per Element", Count.perElement())
-        .apply(
-            "To Row",
-            MapElements.into(rows())
-                .via(
-                    (KV<String, Long> kv) -> {
-                      Optional<KV<String, Long>> safeKV = Optional.ofNullable(kv);
-                      checkState(safeKV.isPresent());
-                      return Row.withSchema(COUNT_EXPANSION_SCHEMA)
-                          .withFieldValue(KEY_FIELD.getName(), safeKV.get().getKey())
-                          .withFieldValue(VALUE_FIELD.getName(), safeKV.get().getValue())
-                          .build();
-                    }))
-        .setRowSchema(COUNT_EXPANSION_SCHEMA);
+        .apply("Count Per Element", Count.perElement());
   }
 }

@@ -2,96 +2,116 @@ package main
 
 import (
 	"context"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/runtime/graphx"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/runtime/xlangx"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/typex"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/util/reflectx"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/io/textio"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/options/jobopts"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/runners/universal/runnerlib"
-	"log"
+	"fmt"
+	"os"
+	"os/signal"
+	"strings"
+	"time"
 
+	"cloud.google.com/go/firestore"
 	"github.com/apache/beam/sdks/v2/go/pkg/beam"
 	_ "github.com/apache/beam/sdks/v2/go/pkg/beam/core/runtime/harness/init"
 	_ "github.com/apache/beam/sdks/v2/go/pkg/beam/io/filesystem/gcs"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/log"
+	"github.com/apache/beam/stitch/translation/internal/firestorex"
+	"github.com/apache/beam/stitch/translation/internal/runner"
+)
+
+const (
+	jobsPath                 = "jobs"
+	jobServiceEnvironmentKey = "JOB_SERVICE"
+	projectIdEnvironmentKey  = "PROJECT"
+
+	pollDuration = time.Second
 )
 
 var (
-	source = "gs://apache-beam-samples/shakespeare/*"
-	//output   = "gs://6567d1de-5fe2-46de-b420-e1b8631e1cb0/output"
-	output   = "gs://16fc1003-5311-4d63-b01a-cbb2f62a8e23/output"
-	endpoint = "localhost:8099"
+	client *firestore.Client
 
-	expansionAddress = "localhost:8080"
+	jobs *firestore.CollectionRef
 
-	worker = "localhost:58721"
+	watcher *firestorex.Watcher
+
+	jobService = os.Getenv(jobServiceEnvironmentKey)
+	projectId  = os.Getenv(projectIdEnvironmentKey)
+
+	requiredEnvVars = []string{
+		jobServiceEnvironmentKey,
+		projectIdEnvironmentKey,
+	}
 )
+
+func init() {
+	ctx := context.Background()
+	if err := env(ctx); err != nil {
+		log.Fatal(ctx, err)
+	}
+	if err := vars(ctx); err != nil {
+		log.Fatal(ctx, err)
+	}
+}
+
+func env(ctx context.Context) error {
+	var missing []string
+	for _, k := range requiredEnvVars {
+		v := os.Getenv(k)
+		vv := fmt.Sprintf("%s=%s", k, v)
+		if v == "" {
+			missing = append(missing, vv)
+		}
+		log.Infof(ctx, vv)
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("missing environment variables: %s", strings.Join(missing, "; "))
+	}
+	return nil
+}
+
+func vars(ctx context.Context) error {
+	var err error
+
+	client, err = firestore.NewClient(ctx, projectId)
+	if err != nil {
+		return err
+	}
+
+	jobs = client.Collection(jobsPath)
+	dispatcher, err := firestorex.NewPipelineDispatcher(client, jobService, runner.DefaultJobOptions)
+	if err != nil {
+		return err
+	}
+
+	watcher, err = firestorex.NewWatcher(ctx, jobs, pollDuration, dispatcher)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func main() {
 	beam.Init()
-	if err := run(context.Background()); err != nil {
-		log.Fatalln(err)
+	ctx := context.Background()
+	if err := run(ctx); err != nil {
+		log.Fatal(ctx, err)
 	}
 }
 
 func run(ctx context.Context) error {
-	*jobopts.EnvironmentType = "external"
-	//srv, err := extworker.StartLoopback(ctx, 0)
-	//if err != nil {
-	//	return err
-	//}
-	//defer srv.Stop(ctx)
-	//getEnvCfg := srv.EnvironmentConfig
-	getEnvCfg := func(ctx context.Context) string {
-		return worker
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	defer cancel()
+	go func() {
+		if err := watcher.Watch(ctx); err != nil {
+			log.Error(ctx, err)
+			cancel()
+		}
+	}()
+	for {
+		select {
+		case <-ctx.Done():
+			_ = client.Close()
+			log.Infof(ctx, "shutting down watcher...")
+			return nil
+		}
 	}
-	envUrn := jobopts.GetEnvironmentUrn(ctx)
-
-	p := buildPipeline()
-
-	edges, _, err := p.Build()
-	if err != nil {
-		return err
-	}
-	xlangx.ResolveArtifacts(ctx, edges, nil)
-	if err != nil {
-		return err
-	}
-
-	environment, err := graphx.CreateEnvironment(ctx, envUrn, getEnvCfg)
-	if err != nil {
-		return err
-	}
-
-	pp, err := graphx.Marshal(edges, &graphx.Options{Environment: environment})
-	if err != nil {
-		return err
-	}
-
-	opt := &runnerlib.JobOptions{
-		Name:        jobopts.GetJobName(),
-		Experiments: jobopts.GetExperiments(),
-		Parallelism: 1,
-	}
-
-	_, err = runnerlib.Execute(ctx, pp, endpoint, opt, *jobopts.Async)
-
-	return err
-}
-
-func buildPipeline() *beam.Pipeline {
-	p, s := beam.NewPipelineWithRoot()
-
-	readPl := beam.CrossLanguagePayload(&struct {
-		FilenamePrefix string
-	}{
-		FilenamePrefix: source,
-	})
-
-	readIn := beam.UnnamedInput(beam.Impulse(s))
-	readOutT := beam.UnnamedOutput(typex.New(reflectx.String))
-	read := beam.CrossLanguage(s, "beam:transform:org.apache.beam.stitch:file:read:v1", readPl, expansionAddress, readIn, readOutT)
-
-	textio.Write(s, output, read[beam.UnnamedOutputTag()])
-	return p
 }

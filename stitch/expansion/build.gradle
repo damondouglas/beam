@@ -27,6 +27,7 @@ ext.summary = "Stitch Expansion service"
 dependencies {
     implementation project(path: ":sdks:java:core", configuration: "shadow")
     implementation project(path: ":sdks:java:expansion-service")
+    implementation project(path: ":sdks:java:io:google-cloud-platform")
     implementation library.java.vendored_guava_26_0_jre
     implementation library.java.slf4j_simple
 }

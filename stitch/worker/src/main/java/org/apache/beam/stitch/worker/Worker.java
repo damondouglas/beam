@@ -23,6 +23,8 @@ public class Worker {
   }
   public static void main(String[] args) throws Exception {
     PipelineOptions options = PipelineOptionsFactory.fromArgs(args).create();
+    PortablePipelineOptions portablePipelineOptions = options.as(PortablePipelineOptions.class);
+    portablePipelineOptions.setDefaultEnvironmentConfig(":50000");
     Worker worker = new Worker(options);
     worker.start();
     worker.blockUntilShutdown();

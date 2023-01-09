@@ -35,4 +35,5 @@ dependencies {
     implementation library.java.vendored_grpc_1_48_1
     implementation library.java.vendored_guava_26_0_jre
     implementation library.java.slf4j_simple
+    implementation library.java.jamm
 }
