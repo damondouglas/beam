@@ -36,7 +36,7 @@ class _NodeHeaderState extends State<NodeHeader> {
         Expanded(child: Text("Transformation: ")),
         Expanded(
           child: TextField(
-              decoration: InputDecoration(border: const OutlineInputBorder(), hintText: title),
+              decoration: InputDecoration(border: const OutlineInputBorder(), hintText: widget.initTitle),
               onSubmitted: (title) {_setTitle(title);}),
         ),
         Expanded(

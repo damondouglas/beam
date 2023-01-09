@@ -6,10 +6,10 @@ import 'app.dart';
 import 'firebase_options.dart';
 
 void main() async {
-  FirebaseFirestore db = FirebaseFirestore.instance;
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  FirebaseFirestore db = FirebaseFirestore.instance;
   runApp(App(db: db));
   }
 

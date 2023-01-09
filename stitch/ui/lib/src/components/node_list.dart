@@ -1,7 +1,9 @@
 part of 'components.dart';
 
 class NodeList extends StatefulWidget {
-  const NodeList({Key? key}) : super(key: key);
+  const NodeList({Key? key,
+    List<String>? this.transformations}) : super(key: key);
+  final List<String>? transformations;
 
   @override
   State<NodeList> createState() => _NodeListState();
@@ -13,14 +15,15 @@ class _NodeListState extends State<NodeList> {
 
   @override
   Widget build(BuildContext context) {
+    print(widget.transformations?.first);
     FirstNodeWidget firstNode = FirstNodeWidget(
-        header: NodeHeader(initTitle: "First Node"),
+        header: NodeHeader(initTitle: widget.transformations?.first??"First Node"),
         id: '0',
         size: nodeSize);
-    NodeWidget secondNode = NodeWidget(header: NodeHeader(initTitle: "Second Node"),
+    NodeWidget secondNode = NodeWidget(header: NodeHeader(initTitle:widget.transformations?.elementAt(1)?? "Second Node"),
         id: '1',
         size: nodeSize);
-    NodeWidget lastNode = LastNodeWidget(header: NodeHeader(initTitle: "Last Node"),
+    NodeWidget lastNode = LastNodeWidget(header: NodeHeader(initTitle:widget.transformations?.elementAt(2)?? "Last Node"),
         id: "2",
         size: nodeSize);
 

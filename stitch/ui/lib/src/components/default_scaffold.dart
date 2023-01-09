@@ -25,6 +25,8 @@ class _Body extends StatefulWidget {
 
 class _BodyState extends State<_Body> {
 
+  NodeList nodeList = const NodeList();
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -32,7 +34,7 @@ class _BodyState extends State<_Body> {
           TextButton(child: const Text("Submit"), onPressed: () => pullPipeline()),
           TextButton(onPressed: () => pullPipeline(), child: const Text("Pull")),
           const Spacer(),
-          const NodeList()]);
+          nodeList]);
   }
 
   void pullPipeline() {
@@ -40,10 +42,16 @@ class _BodyState extends State<_Body> {
   }
 
   Future<void> pullPipelineAsync() async {
-    await widget.db.collection("FYUXSFZLRdkb3h3cXjiW").get().then((event) {
+    print('pulling...');
+    List<String> steps = [];
+    await widget.db.collection("pipelines").get().then((event) {
       for (var doc in event.docs) {
-        print("${doc.id} => ${doc.data()}");
+        steps.add(doc.data()['steps'][0]['expansion'].path);
+        steps.add(doc.data()['steps'][1]['expansion'].path);
+        steps.add(doc.data()['steps'][2]['expansion'].path);
       }
+      nodeList = NodeList(transformations: steps);
+      build(context);
     });
   }
 }
