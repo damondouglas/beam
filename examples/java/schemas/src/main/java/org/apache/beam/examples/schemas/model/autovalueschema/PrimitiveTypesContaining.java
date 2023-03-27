@@ -1,0 +1,79 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.beam.examples.schemas.model.autovalueschema;
+
+import com.google.auto.value.AutoValue;
+import org.apache.beam.sdk.schemas.AutoValueSchema;
+import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
+
+/**
+ * Illustrates modeling a primitive types (i.e. boolean, integer, etc) containing {@link
+ * org.apache.beam.sdk.schemas.Schema} using an {@link AutoValue} annotated class. {@link AutoValue}
+ * is maintained outside the Apache Beam project. Please see <a
+ * href="https://github.com/google/auto/blob/main/value/userguide/index.md">AutoValue User Guide</a>
+ * for more details. The key feature to notice about this example is the use of
+ * {@code @DefaultSchema(AutoValueSchema.class)}. This instructs Beam how to find its {@link
+ * org.apache.beam.sdk.schemas.Schema.Field}s. and their {@link
+ * org.apache.beam.sdk.schemas.Schema.FieldType}.
+ */
+@DefaultSchema(AutoValueSchema.class)
+@AutoValue
+public abstract class PrimitiveTypesContaining {
+
+  public static Builder builder() {
+    return new AutoValue_PrimitiveTypesContaining.Builder();
+  }
+
+  public abstract Boolean getABoolean();
+
+  public abstract Byte getAByte();
+
+  public abstract Double getADouble();
+
+  public abstract Float getAFloat();
+
+  public abstract Short getAShort();
+
+  public abstract Integer getAnInteger();
+
+  public abstract Long getALong();
+
+  public abstract String getAString();
+
+  @AutoValue.Builder
+  public abstract static class Builder {
+
+    public abstract Builder setABoolean(Boolean value);
+
+    public abstract Builder setAByte(Byte value);
+
+    public abstract Builder setADouble(Double value);
+
+    public abstract Builder setAFloat(Float value);
+
+    public abstract Builder setAShort(Short value);
+
+    public abstract Builder setAnInteger(Integer value);
+
+    public abstract Builder setALong(Long value);
+
+    public abstract Builder setAString(String value);
+
+    public abstract PrimitiveTypesContaining build();
+  }
+}
