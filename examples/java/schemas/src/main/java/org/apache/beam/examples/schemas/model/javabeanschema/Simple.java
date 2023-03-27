@@ -35,6 +35,19 @@ import org.joda.time.Instant;
  */
 @DefaultSchema(JavaBeanSchema.class)
 public class Simple {
+
+  public static Simple of(
+      Boolean aBoolean, Integer anInteger, Double aDouble, String aString, Instant anInstant) {
+    Simple simple = new Simple();
+    simple.setABoolean(aBoolean);
+    simple.setAString(aString);
+    simple.setAnInteger(anInteger);
+    simple.setADouble(aDouble);
+    simple.setAnInstant(anInstant);
+
+    return simple;
+  }
+
   private String aString = "";
   private Integer anInteger = 0;
 

@@ -17,51 +17,49 @@
  */
 package org.apache.beam.examples.schemas.usage;
 
-import static org.apache.beam.sdk.values.TypeDescriptors.rows;
-
-import org.apache.beam.examples.schemas.model.annotations.CaseFormatExample;
+import org.apache.beam.examples.schemas.model.javabeanschema.Simple;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.Row;
 import org.joda.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MapElementsExample {
-  private static final Logger LOG = LoggerFactory.getLogger(MapElementsExample.class);
+public class FieldAccessExample {
+  private static final Logger LOG = LoggerFactory.getLogger(FieldAccessExample.class);
 
   public static void main(String[] args) {
     Pipeline pipeline = Pipeline.create();
 
-    PCollection<CaseFormatExample> examples =
+    PCollection<Simple> example =
         pipeline.apply(
             Create.of(
-                CaseFormatExample.of("a", 1, 1.0, true, Instant.now()),
-                CaseFormatExample.of("b", 2, 2.0, true, Instant.now()),
-                CaseFormatExample.of("c", 3, 3.0, true, Instant.now())));
+                Simple.of(true, 1, 1.0, "a", Instant.parse("2023-01-01T01:00:00Z")),
+                Simple.of(false, 2, 2.0, "b", Instant.parse("2023-01-02T01:00:00Z")),
+                Simple.of(true, 3, 3.0, "c", Instant.parse("2023-01-03T01:00:00Z")),
+                Simple.of(false, 4, 4.0, "d", Instant.parse("2023-01-04T01:00:00Z"))));
 
-    SerializableFunction<CaseFormatExample, Row> toRowFn = examples.getToRowFunction();
-
-    PCollection<Row> rows =
-        examples
-            .apply("To Row", MapElements.into(rows()).via(toRowFn))
-            .setRowSchema(examples.getSchema());
-
-    rows.apply(
-        "Log",
-        ParDo.of(
-            new DoFn<Row, Void>() {
-              @ProcessElement
-              public void process(@Element Row row) {
-                LOG.info(row.toString());
-              }
-            }));
+    example.apply("select aBoolean", ParDo.of(new SelectABooleanFn()));
+    example.apply("select anInteger", ParDo.of(new SelectAnIntegerFn()));
 
     pipeline.run();
+  }
+
+  private static class SelectABooleanFn extends DoFn<Simple, Void> {
+    @ProcessElement
+    public void process(
+        @FieldAccess("aString") String aString, @FieldAccess("aBoolean") Boolean aBoolean) {
+      LOG.info("select 'aBoolean': {}: {}", aString, aBoolean);
+    }
+  }
+
+  private static class SelectAnIntegerFn extends DoFn<Simple, Void> {
+    @ProcessElement
+    public void process(
+        @FieldAccess("aString") String aString, @FieldAccess("anInteger") Integer anInteger) {
+      LOG.info("select 'anInteger': {}: {}", aString, anInteger);
+    }
   }
 }

@@ -48,6 +48,17 @@ import org.joda.time.Instant;
 @SchemaCaseFormat(CaseFormat.LOWER_UNDERSCORE)
 public abstract class CaseFormatExample {
 
+  public static CaseFormatExample of(
+      String aString, Integer anInteger, Double aDouble, Boolean aBoolean, Instant anInstant) {
+    return CaseFormatExample.builder()
+        .setAString(aString)
+        .setABoolean(aBoolean)
+        .setAnInteger(anInteger)
+        .setADouble(aDouble)
+        .setAnInstant(anInstant)
+        .build();
+  }
+
   public static Builder builder() {
     return new AutoValue_CaseFormatExample.Builder();
   }

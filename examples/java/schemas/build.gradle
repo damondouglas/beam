@@ -59,10 +59,25 @@ dependencies {
   implementation project(":sdks:java:extensions:avro")
   implementation library.java.avro
   implementation library.java.joda_time
+  implementation library.java.slf4j_api
   implementation library.java.vendored_guava_26_0_jre
   runtimeOnly project(path: ":runners:direct-java", configuration: "shadow")
 
   testImplementation library.java.junit
   testImplementation project(path: ":sdks:java:core", configuration: "shadow")
   testRuntimeOnly project(path: ":runners:direct-java", configuration: "shadow")
+}
+
+tasks.register('fieldAccessExample', JavaExec) {
+  group = "examples"
+  description = "Run FieldAccessExample"
+  mainClass = "org.apache.beam.examples.schemas.usage.FieldAccessExample"
+  classpath = sourceSets.main.runtimeClasspath
+}
+
+tasks.register('mapElementsExample', JavaExec) {
+  group = "examples"
+  description = "Run MapElementsExample"
+  mainClass = "org.apache.beam.examples.schemas.usage.MapElementsExample"
+  classpath = sourceSets.main.runtimeClasspath
 }
