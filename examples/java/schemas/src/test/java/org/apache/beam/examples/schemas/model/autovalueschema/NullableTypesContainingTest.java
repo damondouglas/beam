@@ -19,6 +19,7 @@ package org.apache.beam.examples.schemas.model.autovalueschema;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.util.Objects;
 import org.apache.beam.examples.schemas.model.imperative.ImperativeSchemaExample;
@@ -90,7 +91,7 @@ public class NullableTypesContainingTest {
   }
 
   @Test
-  public void exampleToRow() {
+  public void nullableTypesInstanceConvertsToRow() {
     NullableTypesContaining example =
         NullableTypesContaining.builder()
             .setABoolean(false)
@@ -100,7 +101,7 @@ public class NullableTypesContainingTest {
             .setALong(4L)
             .setAFloat(5.0f)
             .setADouble(6.0)
-            .setAString("a")
+            .setAString("🦄")
             .build();
 
     // Using the conversion method, we can easily instantiate a Row from our custom user type.
@@ -110,18 +111,18 @@ public class NullableTypesContainingTest {
     assertNotNull(row);
 
     // These assertions validate that the Row converted successfully.
-    assertEquals(example.getABoolean(), row.getValue("aBoolean"));
-    assertEquals(example.getAByte(), row.getValue("aByte"));
-    assertEquals(example.getAShort(), row.getValue("aShort"));
-    assertEquals(example.getAnInteger(), row.getValue("anInteger"));
-    assertEquals(example.getALong(), row.getValue("aLong"));
-    assertEquals(example.getAFloat(), row.getValue("aFloat"));
-    assertEquals(example.getADouble(), row.getValue("aDouble"));
-    assertEquals(example.getAString(), row.getValue("aString"));
+    assertEquals(false, row.getValue("aBoolean"));
+    assertEquals(Byte.valueOf((byte) 1), row.getValue("aByte"));
+    assertEquals(Short.valueOf((short) 2), row.getValue("aShort"));
+    assertEquals(Integer.valueOf(3), row.getValue("anInteger"));
+    assertEquals(Long.valueOf(4L), row.getValue("aLong"));
+    assertEquals(Float.valueOf(5.0f), row.getValue("aFloat"));
+    assertEquals(Double.valueOf(6.0), row.getValue("aDouble"));
+    assertEquals("🦄", row.getValue("aString"));
   }
 
   @Test
-  public void exampleFromRow() {
+  public void rowConvertsToNullableTypesInstance() {
     Row row =
         Row.withSchema(SCHEMA)
             .withFieldValue("aBoolean", true)
@@ -131,7 +132,7 @@ public class NullableTypesContainingTest {
             .withFieldValue("aLong", 4L)
             .withFieldValue("aFloat", 5.0f)
             .withFieldValue("aDouble", 6.0)
-            .withFieldValue("aString", "a")
+            .withFieldValue("aString", "🦄")
             .build();
 
     // Using the conversion method, we can easily instantiate a custom user type from a Row.
@@ -141,13 +142,34 @@ public class NullableTypesContainingTest {
     assertNotNull(example);
 
     // These assertions validate that the custom user type converted successfully.
-    assertEquals(row.getValue("aBoolean"), example.getABoolean());
-    assertEquals(row.getValue("aByte"), example.getAByte());
-    assertEquals(row.getValue("aShort"), example.getAShort());
-    assertEquals(row.getValue("anInteger"), example.getAnInteger());
-    assertEquals(row.getValue("aLong"), example.getALong());
-    assertEquals(row.getValue("aFloat"), example.getAFloat());
-    assertEquals(row.getValue("aDouble"), example.getADouble());
-    assertEquals(row.getValue("aString"), example.getAString());
+    assertEquals(true, example.getABoolean());
+    assertEquals(Byte.valueOf((byte) 1), example.getAByte());
+    assertEquals(Short.valueOf((short) 2), example.getAShort());
+    assertEquals(Integer.valueOf(3), example.getAnInteger());
+    assertEquals(Long.valueOf(4L), example.getALong());
+    assertEquals(Float.valueOf(5.0f), example.getAFloat());
+    assertEquals(Double.valueOf(6.0), example.getADouble());
+    assertEquals("🦄", example.getAString());
+  }
+
+  @Test
+  public void nullValuesConvertFromNullableTypesInstance() {
+    NullableTypesContaining aLongOnly = NullableTypesContaining.builder().setALong(100L).build();
+
+    // Using the conversion method, we can easily instantiate a custom user type from a Row.
+    Row row = TO_ROW_FN.apply(aLongOnly);
+
+    // It's possible for the conversion to fail so we assert that the user type is not null.
+    assertNotNull(row);
+
+    // These assertions validate that the custom user type converted successfully.
+    assertEquals(Long.valueOf(100L), row.getValue("aLong"));
+    assertNull(row.getValue("aBoolean"));
+    assertNull(row.getValue("aByte"));
+    assertNull(row.getValue("aShort"));
+    assertNull(row.getValue("anInteger"));
+    assertNull(row.getValue("aFloat"));
+    assertNull(row.getValue("aDouble"));
+    assertNull(row.getValue("aString"));
   }
 }

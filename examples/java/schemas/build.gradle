@@ -57,6 +57,7 @@ dependencies {
 
   implementation project(path: ":sdks:java:core", configuration: "shadow")
   implementation project(":sdks:java:extensions:avro")
+  implementation library.java.avro
   implementation library.java.joda_time
   implementation library.java.vendored_guava_26_0_jre
   runtimeOnly project(path: ":runners:direct-java", configuration: "shadow")
