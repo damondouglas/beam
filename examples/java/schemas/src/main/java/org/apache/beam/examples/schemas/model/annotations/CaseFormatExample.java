@@ -18,7 +18,7 @@
 package org.apache.beam.examples.schemas.model.annotations;
 
 import com.google.auto.value.AutoValue;
-import org.apache.beam.examples.schemas.encoding.JsonEncodingExample;
+import org.apache.beam.examples.schemas.format.JsonEncodingExample;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.schemas.SchemaProvider;

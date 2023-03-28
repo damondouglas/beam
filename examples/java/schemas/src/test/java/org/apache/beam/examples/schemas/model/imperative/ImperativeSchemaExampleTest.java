@@ -18,9 +18,9 @@
 package org.apache.beam.examples.schemas.model.imperative;
 
 import static org.apache.beam.examples.schemas.model.imperative.ImperativeSchemaExample.EXAMPLE_SCHEMA;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,12 +28,9 @@ import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableMap;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.Test;
 
 /** Tests for {@link ImperativeSchemaExample} demonstrating various {@link Schema} methods. */
-@RunWith(JUnit4.class)
 public class ImperativeSchemaExampleTest {
 
   /**
@@ -117,8 +114,7 @@ public class ImperativeSchemaExampleTest {
     // Yet, also notice that sorted() does not change the encoding positions.
     assertEquals(EXAMPLE_SCHEMA.getEncodingPositions(), schema.getEncodingPositions());
 
-    // Also, notice that the despite having the same fields, they assert as not equal. This is an
-    // important
+    // Also, notice that the despite having the same fields, they assert as not equal. This is an important
     // observation when troubleshooting failing tests.
     assertNotEquals(EXAMPLE_SCHEMA, schema);
 

@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.examples.schemas.encoding;
+package org.apache.beam.examples.schemas.format;
 
 import java.util.Objects;
 import org.apache.avro.generic.GenericRecord;
