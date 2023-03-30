@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.examples.schemas.usage;
+package org.apache.beam.examples.schemas.dataframe;
 
 import org.apache.beam.examples.schemas.model.javabeanschema.Simple;
 import org.apache.beam.sdk.Pipeline;

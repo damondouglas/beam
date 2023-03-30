@@ -114,7 +114,8 @@ public class ImperativeSchemaExampleTest {
     // Yet, also notice that sorted() does not change the encoding positions.
     assertEquals(EXAMPLE_SCHEMA.getEncodingPositions(), schema.getEncodingPositions());
 
-    // Also, notice that the despite having the same fields, they assert as not equal. This is an important
+    // Also, notice that the despite having the same fields, they assert as not equal. This is an
+    // important
     // observation when troubleshooting failing tests.
     assertNotEquals(EXAMPLE_SCHEMA, schema);
 
