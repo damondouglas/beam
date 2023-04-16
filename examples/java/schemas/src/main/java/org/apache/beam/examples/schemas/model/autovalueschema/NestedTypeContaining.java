@@ -18,6 +18,34 @@
 package org.apache.beam.examples.schemas.model.autovalueschema;
 
 import com.google.auto.value.AutoValue;
+import org.apache.beam.sdk.schemas.AutoValueSchema;
+import org.apache.beam.sdk.schemas.Schema;
+import org.apache.beam.sdk.schemas.SchemaProvider;
+import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 
+/**
+ * {@link NestedTypeContaining} demonstrates that we can nest other Schema-aware types. In the following example,
+ * the class contains {@link PrimitiveTypesContaining} and {@link TimeTypesContaining} field types. {@link SchemaProvider}
+ * in this context will generate {@link NestedTypeContaining}'s {@link Schema} based on both of the inner classes'
+ * {@link Schema}. See corresponding test for a runnable example.
+ */
+@DefaultSchema(AutoValueSchema.class)
 @AutoValue
-public class NestedTypeContaining {}
+public abstract class NestedTypeContaining {
+
+    public static Builder builder() {
+        return AutoValue_NestedTypeContaining.builder();
+    }
+
+    public abstract PrimitiveTypesContaining getPrimitiveTypesContaining();
+
+    public abstract TimeTypesContaining getTimeTypesContaining();
+    @AutoValue.Builder
+    public static abstract class Builder {
+        public abstract Builder setPrimitiveTypesContaining(PrimitiveTypesContaining value);
+
+        public abstract Builder setTimeTypesContaining(TimeTypesContaining value);
+
+        public abstract NestedTypeContaining build();
+    }
+}

@@ -20,8 +20,15 @@ package org.apache.beam.examples.schemas.model.autovalueschema;
 import com.google.auto.value.AutoValue;
 import java.util.List;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
+import org.apache.beam.sdk.schemas.Schema;
+import org.apache.beam.sdk.schemas.SchemaProvider;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 
+/**
+ * {@link RepeatedTypesContaining} illustrates how to model repeated types in a Schema-aware context using an
+ * {@link AutoValue} class. In this example's context {@link SchemaProvider} derives {@link #getAnIntegerList} and
+ * {@link #getAStringList()} as collection {@link Schema.FieldType}s.
+ */
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue
 public abstract class RepeatedTypesContaining {
