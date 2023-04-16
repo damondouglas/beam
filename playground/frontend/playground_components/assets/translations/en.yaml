@@ -31,8 +31,11 @@ examples:
   userSharedName: 'User Shared Code'
 
 ui:
+  copyright: '© The Apache Software Foundation'
   darkMode: 'Dark Mode'
   lightMode: 'Light Mode'
+  privacyPolicy: 'Privacy Policy'
+  reportIssue: 'Report Issue on GitHub'
 
 intents:
   playground:
@@ -43,6 +46,9 @@ widgets:
 
   codeEditor:
     label: 'Code Text Area'
+  
+  closeButton:
+    label: 'Close'
 
   output:
     filter:
