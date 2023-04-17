@@ -40,24 +40,13 @@ import org.joda.time.Instant;
  * payloads, for example. This valuable annotation prevents us from having to manually get/set the
  * field names in their conventional case formats.
  *
- * <p>See the corresponding tests for this class as well as tests for {@link JsonEncodingExample}
+ * <p>See the corresponding CaseFormatExampleTest as well as tests for {@link JsonEncodingExample}
  * for examples how field names generate using {@link SchemaCaseFormat}.
  */
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue
 @SchemaCaseFormat(CaseFormat.LOWER_UNDERSCORE)
 public abstract class CaseFormatExample {
-
-  public static CaseFormatExample of(
-      String aString, Integer anInteger, Double aDouble, Boolean aBoolean, Instant anInstant) {
-    return CaseFormatExample.builder()
-        .setAString(aString)
-        .setABoolean(aBoolean)
-        .setAnInteger(anInteger)
-        .setADouble(aDouble)
-        .setAnInstant(anInstant)
-        .build();
-  }
 
   public static Builder builder() {
     return new AutoValue_CaseFormatExample.Builder();

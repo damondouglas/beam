@@ -20,7 +20,7 @@ package org.apache.beam.examples.schemas.format;
 import static org.apache.beam.sdk.values.TypeDescriptors.rows;
 
 import org.apache.avro.generic.GenericRecord;
-import org.apache.beam.examples.schemas.model.annotations.CaseFormatExample;
+import org.apache.beam.examples.schemas.model.autovalueschema.NestedTypeContaining;
 import org.apache.beam.sdk.extensions.avro.schemas.utils.AvroUtils;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.MapElements;
@@ -30,15 +30,29 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
+/**
+ * {@link AvroEncodingExample} demonstrates converting to and from Avro formats using Schema-aware
+ * types. {@link NestedTypeContaining} was chosen purposely to demonstrate a variety of primitive,
+ * time-related, and nested types. See corresponding AvroEncodingExampleTest for a runnable example.
+ */
 public class AvroEncodingExample {
   public static class ToAvro
-      extends PTransform<PCollection<CaseFormatExample>, PCollection<GenericRecord>> {
+      extends PTransform<PCollection<NestedTypeContaining>, PCollection<GenericRecord>> {
 
     @Override
-    public PCollection<GenericRecord> expand(PCollection<CaseFormatExample> input) {
+    public PCollection<GenericRecord> expand(PCollection<NestedTypeContaining> input) {
+      // Since NestedTypeContaining is annotated with @DefaultSchema, we can acquire the Schema from
+      // the input.
       Schema inputSchema = input.getSchema();
+
+      // Derive an Avro Schema from a Beam Schema.
       org.apache.avro.Schema avroSchema = AvroUtils.toAvroSchema(inputSchema);
-      SerializableFunction<CaseFormatExample, Row> toRowFn = input.getToRowFunction();
+
+      // The PCollection Input also provides the function to convert from NestedTypeContaining to a
+      // Row representation.
+      SerializableFunction<NestedTypeContaining, Row> toRowFn = input.getToRowFunction();
+
+      // AvroUtils gives us the method that converts a Row to a GenericRecord Avro representation.
       SerializableFunction<Row, GenericRecord> toAvroFn =
           AvroUtils.getRowToGenericRecordFunction(avroSchema);
 
@@ -49,17 +63,22 @@ public class AvroEncodingExample {
   }
 
   public static class FromAvro
-      extends PTransform<PCollection<GenericRecord>, PCollection<CaseFormatExample>> {
+      extends PTransform<PCollection<GenericRecord>, PCollection<NestedTypeContaining>> {
     @Override
-    public PCollection<CaseFormatExample> expand(PCollection<GenericRecord> input) {
+    public PCollection<NestedTypeContaining> expand(PCollection<GenericRecord> input) {
+
+      // The PCollection input provides us the function to convert from a GenericRecord to a Row.
       SerializableFunction<GenericRecord, Row> toRowFn = input.getToRowFunction();
-      SerializableFunction<Row, CaseFormatExample> fromRowFn =
-          AvroUtils.getFromRowFunction(CaseFormatExample.class);
+
+      // AvroUtils gives us a method to convert from a Row to a NestedTypeContaining instance.
+      SerializableFunction<Row, NestedTypeContaining> fromRowFn =
+          AvroUtils.getFromRowFunction(NestedTypeContaining.class);
+
       return input
           .apply("To Row", MapElements.into(rows()).via(toRowFn))
           .apply(
               "From Row",
-              MapElements.into(TypeDescriptor.of(CaseFormatExample.class)).via(fromRowFn));
+              MapElements.into(TypeDescriptor.of(NestedTypeContaining.class)).via(fromRowFn));
     }
   }
 }

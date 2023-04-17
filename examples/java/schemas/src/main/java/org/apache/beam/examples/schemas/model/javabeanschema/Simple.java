@@ -32,6 +32,8 @@ import org.joda.time.Instant;
  *   <li>public getters and setters
  *   <li>correct .equals() and .hashCode methods
  * </ul>
+ *
+ * See corresponding SimpleTest for a runnable example.
  */
 @DefaultSchema(JavaBeanSchema.class)
 public class Simple {

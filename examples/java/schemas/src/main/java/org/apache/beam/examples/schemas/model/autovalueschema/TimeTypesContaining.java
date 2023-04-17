@@ -23,9 +23,18 @@ import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 
+/**
+ * {@link TimeTypesContaining} illustrates how to model time-related types {@link Instant} and
+ * {@link Duration} in a Schema-aware context. See corresponding TimeTypesContainingTest for a
+ * runnable example.
+ */
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue
 public abstract class TimeTypesContaining {
+
+  public static Builder builder() {
+    return new AutoValue_TimeTypesContaining.Builder();
+  }
 
   public abstract Instant getInstant();
 

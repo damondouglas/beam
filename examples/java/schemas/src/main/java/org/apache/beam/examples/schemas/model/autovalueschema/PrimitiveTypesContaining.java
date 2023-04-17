@@ -23,13 +23,9 @@ import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 
 /**
  * Illustrates modeling a primitive types (i.e. boolean, integer, etc) containing {@link
- * org.apache.beam.sdk.schemas.Schema} using an {@link AutoValue} annotated class. {@link AutoValue}
- * is maintained outside the Apache Beam project. Please see <a
- * href="https://github.com/google/auto/blob/main/value/userguide/index.md">AutoValue User Guide</a>
- * for more details. The key feature to notice about this example is the use of
- * {@code @DefaultSchema(AutoValueSchema.class)}. This instructs Beam how to find its {@link
- * org.apache.beam.sdk.schemas.Schema.Field}s. and their {@link
- * org.apache.beam.sdk.schemas.Schema.FieldType}.
+ * org.apache.beam.sdk.schemas.Schema} using an {@link AutoValue} annotated class. Beam
+ * automatically reflects the field types based on the class's getters and setters. See the
+ * corresponding PrimitiveTypesContainingTest for a runnable example.
  */
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue

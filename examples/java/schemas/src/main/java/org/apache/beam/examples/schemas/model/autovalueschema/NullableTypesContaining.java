@@ -27,13 +27,8 @@ import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
  * org.apache.beam.sdk.schemas.Schema} using an {@link AutoValue} annotated class. This class is
  * exactly like {@link PrimitiveTypesContaining} yet with a {@code @Nullable} annotation. The
  * purpose of this example is for you to compare with or without the {@code @Nullable} annotation on
- * the getters to see the outcome on the {@link org.apache.beam.sdk.schemas.Schema}. {@link
- * AutoValue} is maintained outside the Apache Beam project. Please see <a
- * href="https://github.com/google/auto/blob/main/value/userguide/index.md">AutoValue User Guide</a>
- * for more details. The key feature to notice about this example is the use of
- * {@code @DefaultSchema(AutoValueSchema.class)}. This instructs Beam how to find its {@link
- * org.apache.beam.sdk.schemas.Schema.Field}s. and their {@link
- * org.apache.beam.sdk.schemas.Schema.FieldType}.
+ * the getters to see the outcome on the {@link Schema}. See corresponding
+ * NullableTypesContainingTest for a runnable example.
  */
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue

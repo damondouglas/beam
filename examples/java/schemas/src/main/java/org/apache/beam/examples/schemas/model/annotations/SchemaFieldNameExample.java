@@ -25,11 +25,12 @@ import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 import org.apache.beam.sdk.schemas.annotations.SchemaFieldName;
 
 /**
- * {@link SchemaFieldNameExample} demonstrates overriding the field name for a property. In the {@link AutoValueSchema}
- * context shown below, {@link SchemaProvider} assigns the {@link Schema.Field} name reflecting on the getters and
- * setters. Without {@code @SchemaFieldName("some_integer")}, the {@link SchemaProvider} assigns the field name
- * {@code anInteger}. Applying the {@link SchemaFieldName} annotation overrides this default name to {@code some_integer}.
- * See the corresponding test for this class for a runnable example.
+ * {@link SchemaFieldNameExample} demonstrates overriding the field name for a property. In the
+ * {@link AutoValueSchema} context shown below, {@link SchemaProvider} assigns the {@link
+ * Schema.Field} name reflecting on the getters and setters. Without
+ * {@code @SchemaFieldName("some_integer")}, the {@link SchemaProvider} assigns the field name
+ * {@code anInteger}. Applying the {@link SchemaFieldName} annotation overrides this default name to
+ * {@code some_integer}. See the corresponding SchemaFieldNameExampleTest for a runnable example.
  */
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue

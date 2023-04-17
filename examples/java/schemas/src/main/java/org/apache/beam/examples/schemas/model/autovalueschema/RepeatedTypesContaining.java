@@ -25,18 +25,24 @@ import org.apache.beam.sdk.schemas.SchemaProvider;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 
 /**
- * {@link RepeatedTypesContaining} illustrates how to model repeated types in a Schema-aware context using an
- * {@link AutoValue} class. In this example's context {@link SchemaProvider} derives {@link #getAnIntegerList} and
- * {@link #getAStringList()} as collection {@link Schema.FieldType}s.
+ * {@link RepeatedTypesContaining} illustrates how to model repeated types in a Schema-aware context
+ * using an {@link AutoValue} class. In this example's context {@link SchemaProvider} derives {@link
+ * #getAnIntegerList} and {@link #getAStringList()} as collection {@link Schema.FieldType}s. See the
+ * corresponding RepeatedTypesContainingTest for a runnable example.
  */
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue
 public abstract class RepeatedTypesContaining {
 
+  public static Builder builder() {
+    return new AutoValue_RepeatedTypesContaining.Builder();
+  }
+
   public abstract List<String> getAStringList();
 
   public abstract List<Integer> getAnIntegerList();
 
+  @AutoValue.Builder
   public abstract static class Builder {
 
     public abstract Builder setAStringList(List<String> value);
