@@ -18,13 +18,13 @@ func TestRedisQuota_Alive(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		q       *RedisQuota
+		q       *RedisCache
 		args    args
 		wantErr bool
 	}{
 		{
 			name: "with correct addr should be available",
-			q: (*RedisQuota)(redis.NewClient(&redis.Options{
+			q: (*RedisCache)(redis.NewClient(&redis.Options{
 				Addr: s.Addr(),
 			})),
 			args: args{
@@ -34,7 +34,7 @@ func TestRedisQuota_Alive(t *testing.T) {
 		},
 		{
 			name: "with incorrect addr should not be available",
-			q: (*RedisQuota)(redis.NewClient(&redis.Options{
+			q: (*RedisCache)(redis.NewClient(&redis.Options{
 				Addr: "localhost:1234",
 			})),
 			args: args{
@@ -56,7 +56,7 @@ func TestRedisQuota_refresh(t *testing.T) {
 	s := miniredis.RunT(t)
 	defer s.Close()
 
-	q := (*RedisQuota)(redis.NewClient(&redis.Options{
+	q := (*RedisCache)(redis.NewClient(&redis.Options{
 		Addr: s.Addr(),
 	}))
 
@@ -184,7 +184,7 @@ func TestRedisQuota_Decrement(t *testing.T) {
 	s := miniredis.RunT(t)
 	defer s.Close()
 
-	q := (*RedisQuota)(redis.NewClient(&redis.Options{
+	q := (*RedisCache)(redis.NewClient(&redis.Options{
 		Addr: s.Addr(),
 	}))
 

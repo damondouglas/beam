@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"cloud.google.com/go/logging"
 )
@@ -35,6 +36,11 @@ func (logger *jsonEncoderLogger) Error(_ context.Context, payload map[string]int
 	entry := errorEntry(payload)
 	logger.apply(&entry)
 	_ = logger.enc.Encode(entry)
+}
+
+func (logger *jsonEncoderLogger) Fatal(ctx context.Context, payload map[string]interface{}) {
+	logger.Error(ctx, payload)
+	os.Exit(1)
 }
 
 func (logger *jsonEncoderLogger) WithName(name string) Logger {

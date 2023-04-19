@@ -26,7 +26,7 @@ import (
 
 type InMemory struct {
 	svc      *miniredis.Miniredis
-	internal *RedisQuota
+	internal *RedisCache
 	logger   logging.Logger
 }
 
@@ -39,17 +39,25 @@ func (q *InMemory) Alive(ctx context.Context) error {
 		}
 	}
 	if q.internal == nil {
-		q.internal = (*RedisQuota)(redis.NewClient(&redis.Options{
+		q.internal = (*RedisCache)(redis.NewClient(&redis.Options{
 			Addr: q.svc.Addr(),
 		}))
 	}
 	return q.internal.Alive(ctx)
 }
 
-func (q InMemory) Decrement(ctx context.Context, quotaID string) error {
+func (q *InMemory) Decrement(ctx context.Context, quotaID string) error {
 	return q.internal.Decrement(ctx, quotaID)
 }
 
-func (q InMemory) InitializeAndRefreshPerInterval(ctx context.Context, quotaID string, size uint64, interval time.Duration) error {
+func (q *InMemory) InitializeAndRefreshPerInterval(ctx context.Context, quotaID string, size uint64, interval time.Duration) error {
 	return q.internal.InitializeAndRefreshPerInterval(ctx, quotaID, size, interval)
+}
+
+func (q *InMemory) Publish(ctx context.Context, key string, event Event) error {
+	return q.internal.Publish(ctx, key, event)
+}
+
+func (q *InMemory) Subscribe(ctx context.Context, events chan Event, keys ...string) error {
+	return q.internal.Subscribe(ctx, events, keys...)
 }

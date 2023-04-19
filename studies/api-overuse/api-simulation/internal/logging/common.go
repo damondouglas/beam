@@ -1,9 +1,17 @@
 package logging
 
 import (
+	"encoding/json"
+	"os"
 	"time"
 
 	"cloud.google.com/go/logging"
+)
+
+var (
+	Default Logger = &jsonEncoderLogger{
+		enc: json.NewEncoder(os.Stdout),
+	}
 )
 
 func infoEntry(payload map[string]interface{}) logging.Entry {

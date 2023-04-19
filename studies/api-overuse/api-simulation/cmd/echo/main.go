@@ -92,7 +92,7 @@ func vars(ctx context.Context) error {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: os.Getenv(quotaHostKey),
 	})
-	cacheQuota = (*cache.RedisQuota)(redisClient)
+	cacheQuota = (*cache.RedisCache)(redisClient)
 
 	return cacheQuota.Alive(ctx)
 }

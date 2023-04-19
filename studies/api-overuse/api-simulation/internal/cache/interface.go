@@ -11,6 +11,8 @@ var (
 	logger = logging.Default.WithName("quota")
 )
 
+type Event []byte
+
 type aliveChecker interface {
 	Alive(ctx context.Context) error
 }
@@ -25,14 +27,12 @@ type Refresher interface {
 	InitializeAndRefreshPerInterval(ctx context.Context, quotaID string, size uint64, interval time.Duration) error
 }
 
-type Message interface {
-	String() string
-}
-
 type Publisher interface {
-	Publish(ctx context.Context, key string, message Message) error
+	aliveChecker
+	Publish(ctx context.Context, key string, event Event) error
 }
 
 type Subscriber interface {
-	Subscribe(ctx context.Context, messages chan Message, keys ...string) error
+	aliveChecker
+	Subscribe(ctx context.Context, events chan Event, keys ...string) error
 }

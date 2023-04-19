@@ -3,55 +3,60 @@ package quota
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/cache"
+	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/job"
 	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/logging"
 	quota_v1 "github.com/apache/beam/studies/api-overuse/api-simulation/internal/proto/quota/v1"
 	"google.golang.org/grpc"
 )
 
 const (
-	create    = "create"
-	delete    = "delete"
-	delimiter = ":"
+	jobName = "refresher-service"
 )
 
-type createMessage string
+type RefresherServiceSpec job.Spec
 
-type deleteMessage string
+func (spec *RefresherServiceSpec) isValid() error {
+	if spec.Image == "" {
+		return fmt.Errorf("%T.Image property is required", spec)
+	}
+	return nil
+}
 
-func RegisterService(ctx context.Context, server *grpc.Server, quotaRefresher cache.Refresher, publisher cache.Publisher, subscriber cache.Subscriber, logger logging.Logger) error {
-	for _, itr := range []interface{}{
-		quotaRefresher,
-		subscriber,
-		publisher,
+type ServiceSpec struct {
+	RefresherServiceSpec *RefresherServiceSpec
+	Cache                cache.Quota
+	Publisher            cache.Publisher
+	JobsClient           *job.Jobs
+}
+
+func (spec *ServiceSpec) isValid() error {
+	for _, prop := range []interface{}{
+		spec.RefresherServiceSpec,
+		spec.Cache,
+		spec.Publisher,
+		spec.JobsClient,
 	} {
-		if itr == nil {
-			return fmt.Errorf("fatal: RegisterService requires: %T, %T, %T", quotaRefresher, publisher, subscriber)
+		if prop == nil {
+			return fmt.Errorf("%T is required but nil", prop)
 		}
 	}
-	if logger == nil {
-		logger = logging.Default
+	return spec.RefresherServiceSpec.isValid()
+}
+
+func RegisterService(ctx context.Context, server *grpc.Server, spec *ServiceSpec) error {
+	if spec.RefresherServiceSpec.Labels == nil {
+		spec.RefresherServiceSpec.Labels = map[string]string{}
 	}
-	svc := &quotaService{
-		logger:         logger,
-		quotaRefresher: quotaRefresher,
-		publisher:      publisher,
-		subscriber:     subscriber,
-		createRequests: make(chan *quota_v1.Quota),
-	}
-	if err := svc.quotaRefresher.Alive(ctx); err != nil {
+	if err := spec.isValid(); err != nil {
 		return err
 	}
-	svc.logger.Info(ctx, map[string]interface{}{
-		"message":        "registered quota service",
-		"logger":         fmt.Sprintf("%T", svc.logger),
-		"cache":          fmt.Sprintf("%T", svc.quotaRefresher),
-		"quotaRefresher": fmt.Sprintf("%T", svc.quotaRefresher),
-		"publisher":      fmt.Sprintf("%T", svc.publisher),
-		"subscriber":     fmt.Sprintf("%T", svc.subscriber),
-	})
+	svc := &quotaService{
+		logger: logging.Default.WithName("quota-service"),
+		spec:   spec,
+	}
+
 	quota_v1.RegisterQuotaServiceServer(server, svc)
 
 	return nil
@@ -59,67 +64,36 @@ func RegisterService(ctx context.Context, server *grpc.Server, quotaRefresher ca
 
 type quotaService struct {
 	quota_v1.UnimplementedQuotaServiceServer
-	logger         logging.Logger
-	quotaRefresher cache.Refresher
-	publisher      cache.Publisher
-	subscriber     cache.Subscriber
-	createRequests chan *quota_v1.Quota
-}
-
-func (q *quotaService) Watch(ctx context.Context) error {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	errChan := make(chan error)
-	creates := make(chan cache.Message)
-	deletes := make(chan cache.Message)
-	stops := map[string]chan bool{}
-
-	for {
-		select {
-		case qq := <-q.createRequests:
-			stop := make(chan bool)
-			stops[qq.Id] = stop
-			go q.createAndRefresh(ctx, qq, errChan, stop)
-		case err := <-errChan:
-			return err
-		case <-ctx.Done():
-			return nil
-		}
-	}
-}
-
-func (q *quotaService) createAndRefresh(ctx context.Context, qq *quota_v1.Quota, errChan chan error, stop chan bool) {
-	if qq.Size <= 0 {
-		errChan <- fmt.Errorf("quota size must be > 0, got: %v, for: %s", qq.Size, qq.Id)
-		return
-	}
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	size := uint64(qq.Size)
-	interval := time.Duration(qq.RefreshMillisecondsInterval)
-	go func() {
-		if err := q.quotaRefresher.InitializeAndRefreshPerInterval(ctx, qq.Id, size, interval); err != nil {
-			errChan <- err
-			return
-		}
-	}()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-stop:
-			return
-		}
-	}
+	logger logging.Logger
+	spec   *ServiceSpec
 }
 
 func (q *quotaService) Create(ctx context.Context, request *quota_v1.CreateQuotaRequest) (*quota_v1.CreateQuotaResponse, error) {
-	q.logger.Info(ctx, map[string]interface{}{
+	q.logger.Debug(ctx, map[string]interface{}{
 		"request": request,
 	})
-	q.createRequests <- request.Quota
 
-	return nil, nil
+	qq := request.Quota
+
+	spec := (*job.Spec)(q.spec.RefresherServiceSpec)
+	spec.Name = fmt.Sprintf("%s-%s", jobName, qq.Id)
+
+	j, err := q.spec.JobsClient.Start(ctx, spec)
+	if err != nil {
+		q.logger.Error(ctx, map[string]interface{}{
+			"message": err.Error(),
+			"request": request,
+			"jobSpec": spec,
+		})
+		return nil, err
+	}
+
+	q.logger.Debug(ctx, map[string]interface{}{
+		"message": "created refresher-service job",
+		"job":     j,
+	})
+
+	return &quota_v1.CreateQuotaResponse{}, nil
 }
 
 func (q *quotaService) List(ctx context.Context, request *quota_v1.ListQuotasRequest) (*quota_v1.ListQuotasResponse, error) {
@@ -130,17 +104,26 @@ func (q *quotaService) Delete(ctx context.Context, request *quota_v1.DeleteQuota
 	q.logger.Info(ctx, map[string]interface{}{
 		"request": request,
 	})
-	return nil, nil
+
+	payload := []byte(fmt.Sprintf("%s:%s", request.Id, "delete"))
+
+	if err := q.spec.Publisher.Publish(ctx, request.Id, payload); err != nil {
+		return nil, fmt.Errorf("error publishing delete request key: %s, payload: %s, err %w", request.Id, string(payload), err)
+	}
+
+	q.logger.Debug(ctx, map[string]interface{}{
+		"message": "published deletion request",
+		"key":     request.Id,
+		"payload": string(payload),
+	})
+
+	return &quota_v1.DeleteQuotaResponse{
+		Quota: &quota_v1.Quota{
+			Id: request.Id,
+		},
+	}, nil
 }
 
 func (q *quotaService) Describe(ctx context.Context, request *quota_v1.DescribeQuotaRequest) (*quota_v1.DescribeQuotaResponse, error) {
 	return nil, fmt.Errorf("not yet implemented")
-}
-
-func (msg deleteMessage) String() string {
-	return fmt.Sprintf("%s%s%s", string(msg), delimiter, delete)
-}
-
-func (msg createMessage) String() string {
-	return fmt.Sprintf("%s%s%s", string(msg), delimiter, create)
 }

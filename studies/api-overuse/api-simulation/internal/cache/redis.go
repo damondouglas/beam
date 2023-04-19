@@ -11,14 +11,14 @@ import (
 
 const maxRetries = 3
 
-type RedisQuota redis.Client
+type RedisCache redis.Client
 
-func (q *RedisQuota) Alive(ctx context.Context) error {
+func (q *RedisCache) Alive(ctx context.Context) error {
 	client := (*redis.Client)(q)
 	return client.Ping(ctx).Err()
 }
 
-func (q *RedisQuota) Decrement(ctx context.Context, quotaID string) error {
+func (q *RedisCache) Decrement(ctx context.Context, quotaID string) error {
 	client := (*redis.Client)(q)
 	txf := func(tx *redis.Tx) error {
 		n, err := tx.Get(ctx, quotaID).Uint64()
@@ -50,7 +50,7 @@ func (q *RedisQuota) Decrement(ctx context.Context, quotaID string) error {
 	return fmt.Errorf("error: Decrement(%s) reached maximum number of retries: %v", quotaID, maxRetries)
 }
 
-func (q *RedisQuota) InitializeAndRefreshPerInterval(ctx context.Context, quotaID string, size uint64, interval time.Duration) error {
+func (q *RedisCache) InitializeAndRefreshPerInterval(ctx context.Context, quotaID string, size uint64, interval time.Duration) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	tick := time.Tick(interval)
@@ -71,17 +71,17 @@ func (q *RedisQuota) InitializeAndRefreshPerInterval(ctx context.Context, quotaI
 	}
 }
 
-func (q *RedisQuota) refresh(ctx context.Context, quotaID string, size uint64, interval time.Duration) error {
+func (q *RedisCache) refresh(ctx context.Context, quotaID string, size uint64, interval time.Duration) error {
 	client := (*redis.Client)(q)
 	return client.SetEx(ctx, quotaID, size, interval).Err()
 }
 
-func (q *RedisQuota) Publish(ctx context.Context, key string, message Message) error {
+func (q *RedisCache) Publish(ctx context.Context, key string, event Event) error {
 	client := (*redis.Client)(q)
-	return client.Publish(ctx, key, message.String()).Err()
+	return client.Publish(ctx, key, event).Err()
 }
 
-func (q *RedisQuota) Subscribe(ctx context.Context, messages chan Message, keys ...string) error {
+func (q *RedisCache) Subscribe(ctx context.Context, events chan Event, keys ...string) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	client := (*redis.Client)(q)
@@ -98,7 +98,7 @@ func (q *RedisQuota) Subscribe(ctx context.Context, messages chan Message, keys 
 				"message":  "retrieved channel message",
 				"received": msg,
 			})
-			messages <- msg
+			events <- []byte(msg.Payload)
 		case <-ctx.Done():
 			return nil
 		}
