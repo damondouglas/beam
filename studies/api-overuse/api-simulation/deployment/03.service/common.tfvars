@@ -1,0 +1,6 @@
+artifact_registry_id = "api-simulation"
+echo_image_name_tag  = "echo:latest"
+redis_service_name   = "redis-master"
+region               = "us-central1"
+resource_name        = "quota"
+service_port         = "8080"

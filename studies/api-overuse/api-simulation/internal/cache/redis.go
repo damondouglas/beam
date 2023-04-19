@@ -1,4 +1,4 @@
-package quota
+package cache
 
 import (
 	"context"
@@ -60,7 +60,7 @@ func (q *RedisQuota) InitializeAndRefreshPerInterval(ctx context.Context, quotaI
 			if err := q.refresh(ctx, quotaID, size, interval); err != nil {
 				return err
 			}
-			logger.Debug(ctx, map[string]string{
+			logger.Debug(ctx, map[string]interface{}{
 				"message": "refreshed quota",
 				"quotaID": quotaID,
 				"size":    strconv.FormatUint(size, 10),
@@ -74,4 +74,33 @@ func (q *RedisQuota) InitializeAndRefreshPerInterval(ctx context.Context, quotaI
 func (q *RedisQuota) refresh(ctx context.Context, quotaID string, size uint64, interval time.Duration) error {
 	client := (*redis.Client)(q)
 	return client.SetEx(ctx, quotaID, size, interval).Err()
+}
+
+func (q *RedisQuota) Publish(ctx context.Context, key string, message Message) error {
+	client := (*redis.Client)(q)
+	return client.Publish(ctx, key, message.String()).Err()
+}
+
+func (q *RedisQuota) Subscribe(ctx context.Context, messages chan Message, keys ...string) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	client := (*redis.Client)(q)
+	sub := client.PSubscribe(ctx, keys...)
+	channel := sub.Channel()
+	logger.Debug(ctx, map[string]interface{}{
+		"message": "opening channel",
+		"keys":    keys,
+	})
+	for {
+		select {
+		case msg := <-channel:
+			logger.Debug(ctx, map[string]interface{}{
+				"message":  "retrieved channel message",
+				"received": msg,
+			})
+			messages <- msg
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }

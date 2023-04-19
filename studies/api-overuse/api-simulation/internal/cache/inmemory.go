@@ -13,55 +13,43 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package echo
+package cache
 
 import (
 	"context"
+	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/logging"
-	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/quota"
+	"github.com/redis/go-redis/v9"
 )
 
-// Option for the echoService.
-type Option interface {
-	apply(context.Context, *echoService) error
+type InMemory struct {
+	svc      *miniredis.Miniredis
+	internal *RedisQuota
+	logger   logging.Logger
 }
 
-// WithQuota Option assigns a quota.Quota to the echo service.
-// Panics if cache is nil.
-func WithQuota(q quota.Quota) Option {
-	if q == nil {
-		panic("q is nil")
+func (q *InMemory) Alive(ctx context.Context) error {
+	if q.svc == nil {
+		var err error
+		q.svc, err = miniredis.Run()
+		if err != nil {
+			return err
+		}
 	}
-	return &quotaOption{
-		q: q,
+	if q.internal == nil {
+		q.internal = (*RedisQuota)(redis.NewClient(&redis.Options{
+			Addr: q.svc.Addr(),
+		}))
 	}
+	return q.internal.Alive(ctx)
 }
 
-// WithLogger Option assigns a logging.Logger
-func WithLogger(logger logging.Logger) Option {
-	return &loggerOption{
-		logger: logger,
-	}
+func (q InMemory) Decrement(ctx context.Context, quotaID string) error {
+	return q.internal.Decrement(ctx, quotaID)
 }
 
-type quotaOption struct {
-	q quota.Quota
-}
-
-func (opt *quotaOption) apply(ctx context.Context, svc *echoService) error {
-	if err := opt.q.Alive(ctx); err != nil {
-		return err
-	}
-	svc.q = opt.q
-	return nil
-}
-
-type loggerOption struct {
-	logger logging.Logger
-}
-
-func (opt *loggerOption) apply(_ context.Context, svc *echoService) error {
-	svc.logger = opt.logger
-	return nil
+func (q InMemory) InitializeAndRefreshPerInterval(ctx context.Context, quotaID string, size uint64, interval time.Duration) error {
+	return q.internal.InitializeAndRefreshPerInterval(ctx, quotaID, size, interval)
 }

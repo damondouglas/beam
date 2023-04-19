@@ -22,25 +22,20 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
+	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/cache"
 	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/echo"
 	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/logging"
-	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/quota"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
 
 const (
-	portKey                 = "PORT"
-	quotaHostKey            = "QUOTA_HOST"
-	quotaIDKey              = "QUOTA_ID"
-	quotaSizeKey            = "QUOTA_SIZE"
-	quotaRefreshIntervalKey = "QUOTA_REFRESH_INTERVAL"
+	portKey      = "PORT"
+	quotaHostKey = "QUOTA_HOST"
 )
 
 var (
@@ -49,18 +44,13 @@ var (
 		Short: "A simple service that simulates an API quota.",
 		Run:   run,
 	}
-	address  = fmt.Sprintf(":%s", os.Getenv(portKey))
-	logger   = logging.Default.WithName("api-simulation")
-	q        quota.Quota
-	interval time.Duration
-	size     uint64
+	address    = fmt.Sprintf(":%s", os.Getenv(portKey))
+	logger     = logging.Default.WithName("echo-service")
+	cacheQuota cache.Quota
 
 	requiredEnvironmentVariables = []string{
 		portKey,
 		quotaHostKey,
-		quotaIDKey,
-		quotaRefreshIntervalKey,
-		quotaSizeKey,
 	}
 )
 
@@ -74,23 +64,16 @@ func init() {
 	logger.Info(ctx, envs)
 
 	if err := vars(ctx); err != nil {
-		logger.Error(ctx, map[string]string{
+		logger.Error(ctx, map[string]interface{}{
 			"message": err.Error(),
 		})
 		os.Exit(1)
 	}
-
-	logger.Info(ctx, map[string]string{
-		"message":                "parsed environment variables",
-		"quota_id":               os.Getenv(quotaIDKey),
-		"quota_refresh_interval": interval.String(),
-		"quota_refresh_size":     strconv.FormatUint(size, 10),
-	})
 }
 
-func env() (map[string]string, error) {
+func env() (map[string]interface{}, error) {
 	var missing []string
-	result := make(map[string]string)
+	result := make(map[string]interface{})
 	for _, k := range requiredEnvironmentVariables {
 		result[k] = os.Getenv(k)
 		if os.Getenv(k) == "" {
@@ -106,22 +89,12 @@ func env() (map[string]string, error) {
 }
 
 func vars(ctx context.Context) error {
-	var err error
-
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: os.Getenv(quotaHostKey),
 	})
-	q = (*quota.RedisQuota)(redisClient)
+	cacheQuota = (*cache.RedisQuota)(redisClient)
 
-	if interval, err = time.ParseDuration(os.Getenv(quotaRefreshIntervalKey)); err != nil {
-		return err
-	}
-
-	if size, err = strconv.ParseUint(os.Getenv(quotaSizeKey), 10, 64); err != nil {
-		return err
-	}
-
-	return q.Alive(ctx)
+	return cacheQuota.Alive(ctx)
 }
 
 func main() {
@@ -137,7 +110,7 @@ func run(cmd *cobra.Command, _ []string) {
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
 		err = fmt.Errorf("error listening on address: %s, %w", address, err)
-		logger.Error(ctx, map[string]string{
+		logger.Error(ctx, map[string]interface{}{
 			"message": err.Error(),
 			portKey:   os.Getenv(portKey),
 		})
@@ -145,26 +118,17 @@ func run(cmd *cobra.Command, _ []string) {
 	}
 
 	svc := grpc.NewServer()
-	if err := echo.RegisterService(ctx, svc, echo.WithQuota(q), echo.WithLogger(logger)); err != nil {
+	if err := echo.RegisterService(ctx, svc, cacheQuota, logger); err != nil {
 		err = fmt.Errorf("error registering echo service: %w", err)
-		logger.Error(ctx, map[string]string{
+		logger.Error(ctx, map[string]interface{}{
 			"message": err.Error(),
 		})
 		return
 	}
 
 	go func() {
-		if err := q.InitializeAndRefreshPerInterval(ctx, os.Getenv(quotaIDKey), size, interval); err != nil {
-			logger.Error(ctx, map[string]string{
-				"message": err.Error(),
-			})
-			return
-		}
-	}()
-
-	go func() {
 		if err := svc.Serve(lis); err != nil {
-			logger.Error(ctx, map[string]string{
+			logger.Error(ctx, map[string]interface{}{
 				"message": err.Error(),
 			})
 			return

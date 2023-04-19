@@ -6,7 +6,7 @@ import (
 	"cloud.google.com/go/logging"
 )
 
-func infoEntry(payload map[string]string) logging.Entry {
+func infoEntry(payload map[string]interface{}) logging.Entry {
 	return logging.Entry{
 		Timestamp: time.Now(),
 		Severity:  logging.Info,
@@ -14,7 +14,7 @@ func infoEntry(payload map[string]string) logging.Entry {
 	}
 }
 
-func debugEntry(payload map[string]string) logging.Entry {
+func debugEntry(payload map[string]interface{}) logging.Entry {
 	return logging.Entry{
 		Timestamp: time.Now(),
 		Severity:  logging.Debug,
@@ -22,7 +22,7 @@ func debugEntry(payload map[string]string) logging.Entry {
 	}
 }
 
-func errorEntry(payload map[string]string) logging.Entry {
+func errorEntry(payload map[string]interface{}) logging.Entry {
 	return logging.Entry{
 		Timestamp: time.Now(),
 		Severity:  logging.Error,

@@ -19,19 +19,19 @@ func (logger *jsonEncoderLogger) apply(entry *logging.Entry) {
 	entry.LogName = logger.name
 }
 
-func (logger *jsonEncoderLogger) Info(_ context.Context, payload map[string]string) {
+func (logger *jsonEncoderLogger) Info(_ context.Context, payload map[string]interface{}) {
 	entry := infoEntry(payload)
 	logger.apply(&entry)
 	_ = logger.enc.Encode(entry)
 }
 
-func (logger *jsonEncoderLogger) Debug(_ context.Context, payload map[string]string) {
+func (logger *jsonEncoderLogger) Debug(_ context.Context, payload map[string]interface{}) {
 	entry := debugEntry(payload)
 	logger.apply(&entry)
 	_ = logger.enc.Encode(entry)
 }
 
-func (logger *jsonEncoderLogger) Error(_ context.Context, payload map[string]string) {
+func (logger *jsonEncoderLogger) Error(_ context.Context, payload map[string]interface{}) {
 	entry := errorEntry(payload)
 	logger.apply(&entry)
 	_ = logger.enc.Encode(entry)

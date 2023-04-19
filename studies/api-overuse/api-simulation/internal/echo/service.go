@@ -19,34 +19,31 @@ import (
 	context "context"
 	"fmt"
 
+	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/cache"
 	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/logging"
 	echo_v1 "github.com/apache/beam/studies/api-overuse/api-simulation/internal/proto/echo/v1"
-	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/quota"
 	"google.golang.org/grpc"
 )
 
-// RegisterService to a grpcServer. Provided Option opts override local
-// in-memory instances.
-func RegisterService(ctx context.Context, server *grpc.Server, opts ...Option) error {
-	svc := &echoService{}
-	for _, opt := range opts {
-		if err := opt.apply(ctx, svc); err != nil {
-			return err
-		}
+// RegisterService to a grpcServer.
+func RegisterService(ctx context.Context, server *grpc.Server, quotaCache cache.Quota, logger logging.Logger) error {
+	if quotaCache == nil {
+		quotaCache = &cache.InMemory{}
 	}
-	if svc.logger == nil {
-		svc.logger = logging.Default
+	if logger == nil {
+		logger = logging.Default
 	}
-	if svc.q == nil {
-		svc.q = &quota.InMemory{}
+	svc := &echoService{
+		logger:     logger,
+		quotaCache: quotaCache,
 	}
-	if err := svc.q.Alive(ctx); err != nil {
+	if err := svc.quotaCache.Alive(ctx); err != nil {
 		return err
 	}
-	svc.logger.Info(ctx, map[string]string{
+	svc.logger.Info(ctx, map[string]interface{}{
 		"message": "registered echo service",
 		"logger":  fmt.Sprintf("%T", svc.logger),
-		"quota":   fmt.Sprintf("%T", svc.q),
+		"cache":   fmt.Sprintf("%T", svc.quotaCache),
 	})
 	echo_v1.RegisterEchoServiceServer(server, svc)
 	return nil
@@ -54,12 +51,12 @@ func RegisterService(ctx context.Context, server *grpc.Server, opts ...Option) e
 
 type echoService struct {
 	echo_v1.UnimplementedEchoServiceServer
-	q      quota.Quota
-	logger logging.Logger
+	quotaCache cache.Quota
+	logger     logging.Logger
 }
 
 func (e *echoService) Echo(ctx context.Context, request *echo_v1.EchoRequest) (*echo_v1.EchoResponse, error) {
-	if err := e.q.Decrement(ctx, request.Id); err != nil {
+	if err := e.quotaCache.Decrement(ctx, request.Id); err != nil {
 		return nil, err
 	}
 	return &echo_v1.EchoResponse{
