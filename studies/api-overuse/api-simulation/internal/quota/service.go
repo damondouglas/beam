@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/cache"
-	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/job"
+	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/k8s"
 	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/logging"
 	quota_v1 "github.com/apache/beam/studies/api-overuse/api-simulation/internal/proto/quota/v1"
 	"google.golang.org/grpc"
@@ -15,7 +15,7 @@ const (
 	jobName = "refresher-service"
 )
 
-type RefresherServiceSpec job.Spec
+type RefresherServiceSpec k8s.Spec
 
 func (spec *RefresherServiceSpec) isValid() error {
 	if spec.Image == "" {
@@ -26,9 +26,9 @@ func (spec *RefresherServiceSpec) isValid() error {
 
 type ServiceSpec struct {
 	RefresherServiceSpec *RefresherServiceSpec
-	Cache                cache.Quota
+	Cache                cache.Decrementer
 	Publisher            cache.Publisher
-	JobsClient           *job.Jobs
+	JobsClient           *k8s.Jobs
 }
 
 func (spec *ServiceSpec) isValid() error {
@@ -75,7 +75,7 @@ func (q *quotaService) Create(ctx context.Context, request *quota_v1.CreateQuota
 
 	qq := request.Quota
 
-	spec := (*job.Spec)(q.spec.RefresherServiceSpec)
+	spec := (*k8s.Spec)(q.spec.RefresherServiceSpec)
 	spec.Name = fmt.Sprintf("%s-%s", jobName, qq.Id)
 
 	j, err := q.spec.JobsClient.Start(ctx, spec)

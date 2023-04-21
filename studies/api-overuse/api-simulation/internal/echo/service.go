@@ -25,33 +25,28 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	logName = "echo-service"
+)
+
 // RegisterService to a grpcServer.
-func RegisterService(ctx context.Context, server *grpc.Server, quotaCache cache.Quota, logger logging.Logger) error {
+func RegisterService(ctx context.Context, server *grpc.Server, quotaCache cache.Decrementer) error {
 	if quotaCache == nil {
-		quotaCache = &cache.InMemory{}
+		return fmt.Errorf("quotaCache is nil")
 	}
-	if logger == nil {
-		logger = logging.Default
-	}
+
 	svc := &echoService{
-		logger:     logger,
+		logger:     logging.Default.WithName(logName),
 		quotaCache: quotaCache,
 	}
-	if err := svc.quotaCache.Alive(ctx); err != nil {
-		return err
-	}
-	svc.logger.Info(ctx, map[string]interface{}{
-		"message": "registered echo service",
-		"logger":  fmt.Sprintf("%T", svc.logger),
-		"cache":   fmt.Sprintf("%T", svc.quotaCache),
-	})
+
 	echo_v1.RegisterEchoServiceServer(server, svc)
 	return nil
 }
 
 type echoService struct {
 	echo_v1.UnimplementedEchoServiceServer
-	quotaCache cache.Quota
+	quotaCache cache.Decrementer
 	logger     logging.Logger
 }
 

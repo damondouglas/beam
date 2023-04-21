@@ -6,17 +6,17 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/logging"
 	"github.com/redis/go-redis/v9"
 )
 
 const maxRetries = 3
 
-type RedisCache redis.Client
+var (
+	logger = logging.Default.WithName("cache")
+)
 
-func (q *RedisCache) Alive(ctx context.Context) error {
-	client := (*redis.Client)(q)
-	return client.Ping(ctx).Err()
-}
+type RedisCache redis.Client
 
 func (q *RedisCache) Decrement(ctx context.Context, quotaID string) error {
 	client := (*redis.Client)(q)
@@ -50,7 +50,7 @@ func (q *RedisCache) Decrement(ctx context.Context, quotaID string) error {
 	return fmt.Errorf("error: Decrement(%s) reached maximum number of retries: %v", quotaID, maxRetries)
 }
 
-func (q *RedisCache) InitializeAndRefreshPerInterval(ctx context.Context, quotaID string, size uint64, interval time.Duration) error {
+func (q *RedisCache) Refresh(ctx context.Context, quotaID string, size uint64, interval time.Duration) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	tick := time.Tick(interval)

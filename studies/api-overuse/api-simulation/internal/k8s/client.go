@@ -1,4 +1,4 @@
-package job
+package k8s
 
 import (
 	"fmt"

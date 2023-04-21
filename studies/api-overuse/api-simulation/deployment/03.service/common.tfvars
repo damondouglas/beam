@@ -1,6 +1,16 @@
-artifact_registry_id = "api-simulation"
-echo_image_name_tag  = "echo:latest"
-redis_service_name   = "redis-master"
-region               = "us-central1"
-resource_name        = "quota"
-service_port         = "8080"
+namespace          = "quota"
+redis_service_name = "redis-master"
+image_tag          = "latest"
+
+echo_service = {
+  name     = "echo"
+  image_id = "echo"
+  port     = 8080
+}
+
+quota_service = {
+  name               = "quota"
+  image_id           = "quota"
+  port               = 8080
+  refresher_image_id = "refresher"
+}

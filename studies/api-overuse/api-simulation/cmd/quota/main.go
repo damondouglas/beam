@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Runs the echo service.
+// Runs the quota service.
 package main
 
 import (
@@ -22,32 +22,42 @@ import (
 	"net"
 
 	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/cache"
-	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/echo"
 	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/environment"
+	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/k8s"
 	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/logging"
+	"github.com/apache/beam/studies/api-overuse/api-simulation/internal/quota"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 )
 
 var (
-	port environment.Variable = "PORT"
+	port           environment.Variable = "PORT"
+	refresherImage environment.Variable = "REFRESHER_IMAGE"
+	namespace      environment.Variable = "NAMESPACE"
 
-	address    = fmt.Sprintf(":%s", port.Value())
-	logger     = logging.Default.WithName("echo-service")
-	cacheQuota cache.Decrementer
+	spec = &quota.ServiceSpec{
+		RefresherServiceSpec: &quota.RefresherServiceSpec{
+			ContainerName: "refresher",
+			Image:         refresherImage.Value(),
+		},
+	}
+
+	logger = logging.Default.WithName("quota-service")
 
 	required = []environment.Variable{
 		port,
 		cache.Host,
+		namespace,
+		refresherImage,
 	}
 
-	env = environment.Map(required...)
+	env     = environment.Map(required...)
+	address = fmt.Sprintf(":%s", port.Value())
 )
 
 func init() {
 	ctx := context.Background()
-
 	if err := environment.Missing(required...); err != nil {
 		logger.Fatal(ctx, map[string]interface{}{
 			"message": err.Error(),
@@ -61,7 +71,6 @@ func init() {
 			"env":     env,
 		})
 	}
-
 }
 
 func vars(ctx context.Context) error {
@@ -69,15 +78,28 @@ func vars(ctx context.Context) error {
 		Addr: cache.Host.Value(),
 	})
 
-	cacheQuota = (*cache.RedisCache)(redisClient)
+	cacheClient := (*cache.RedisCache)(redisClient)
+
+	spec.Cache = cacheClient
+	spec.Publisher = cacheClient
+
+	k8sClient, err := k8s.NewDefaultClient()
+	if err != nil {
+		return err
+	}
+
+	ns := k8sClient.Namespace(namespace.Value())
+	spec.JobsClient = k8sClient.Jobs(ns)
 
 	if err := redisClient.Ping(ctx).Err(); err != nil {
 		return err
 	}
+
 	logger.Info(ctx, map[string]interface{}{
 		"message": "pinged cache host ok",
 		"host":    cache.Host.Value(),
 	})
+
 	return nil
 }
 
@@ -87,20 +109,18 @@ func main() {
 
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
-		err = fmt.Errorf("error listening on address: %s, %w", address, err)
 		logger.Error(ctx, map[string]interface{}{
 			"message": err.Error(),
 			"env":     env,
 		})
-		return
 	}
 
 	svc := grpc.NewServer()
 
-	if err := echo.RegisterService(ctx, svc, cacheQuota); err != nil {
-		err = fmt.Errorf("error registering echo service: %w", err)
+	if err := quota.RegisterService(ctx, svc, spec); err != nil {
 		logger.Error(ctx, map[string]interface{}{
 			"message": err.Error(),
+			"env":     env,
 		})
 		return
 	}
@@ -115,16 +135,14 @@ func main() {
 	}()
 
 	logger.Info(ctx, map[string]interface{}{
-		"message": "started echo service",
+		"message": "started quota service",
 		"env":     env,
 	})
 
 	for {
 		select {
 		case <-ctx.Done():
-			if svc != nil {
-				svc.GracefulStop()
-			}
+			svc.GracefulStop()
 			return
 		}
 	}

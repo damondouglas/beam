@@ -1,3 +1,19 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Runs the quota refresher service.
 package main
 
 import (
@@ -14,10 +30,10 @@ import (
 
 var (
 	required = []environment.Variable{
-		environment.CacheHost,
-		environment.QuotaId,
-		environment.QuotaSize,
-		environment.QuotaRefreshInterval,
+		cache.Host,
+		cache.QuotaId,
+		cache.QuotaSize,
+		cache.QuotaRefreshInterval,
 	}
 
 	size     uint64
@@ -44,23 +60,32 @@ func vars(ctx context.Context) error {
 	}
 	logger.Debug(ctx, environment.Map(required...))
 
-	if size, err = strconv.ParseUint(environment.QuotaSize.Value(), 10, 64); err != nil {
+	if size, err = strconv.ParseUint(cache.QuotaSize.Value(), 10, 64); err != nil {
 		return err
 	}
 
-	if interval, err = time.ParseDuration(environment.QuotaRefreshInterval.Value()); err != nil {
+	if interval, err = time.ParseDuration(cache.QuotaRefreshInterval.Value()); err != nil {
 		return err
 	}
 
-	client := redis.NewClient(&redis.Options{
-		Addr: environment.CacheHost.Value(),
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: cache.Host.Value(),
 	})
 
-	rc := (*cache.RedisCache)(client)
+	rc := (*cache.RedisCache)(redisClient)
 	cacheRefresher = rc
 	subscriber = rc
 
-	return rc.Alive(ctx)
+	if err := redisClient.Ping(ctx).Err(); err != nil {
+		return err
+	}
+
+	logger.Info(ctx, map[string]interface{}{
+		"message": "pinged cache host ok",
+		"host":    cache.Host.Value(),
+	})
+
+	return nil
 }
 
 func main() {
@@ -78,12 +103,12 @@ func run() error {
 	errChan := make(chan error)
 	evts := make(chan cache.Event)
 	go func() {
-		if err := subscriber.Subscribe(ctx, evts, environment.QuotaId.Value()); err != nil {
+		if err := subscriber.Subscribe(ctx, evts, cache.QuotaId.Value()); err != nil {
 			errChan <- err
 		}
 	}()
 	go func() {
-		if err := cacheRefresher.InitializeAndRefreshPerInterval(ctx, environment.QuotaId.Value(), size, interval); err != nil {
+		if err := cacheRefresher.Refresh(ctx, cache.QuotaId.Value(), size, interval); err != nil {
 			errChan <- err
 		}
 	}()

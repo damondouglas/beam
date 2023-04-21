@@ -1,36 +1,41 @@
+locals {
+  echo_image = "${var.image_repository}/${var.echo_service.image_id}:${var.image_tag}"
+}
+
 resource "kubernetes_config_map" "echo" {
   metadata {
-    name      = local.echo.service_name
+    name      = var.echo_service.name
     namespace = data.kubernetes_namespace.quota.metadata[0].name
   }
   data = {
-    PORT       = var.service_port
-    QUOTA_HOST = local.quota_host
+    PORT       = tostring(var.echo_service.port)
+    CACHE_HOST = local.cache_host
   }
 }
 
 resource "kubernetes_deployment" "echo" {
   wait_for_rollout = false
   metadata {
-    name      = local.echo.service_name
+    name      = var.echo_service.name
     namespace = data.kubernetes_namespace.quota.metadata[0].name
   }
   spec {
     selector {
       match_labels = {
-        app = local.echo.service_name
+        app = var.echo_service.name
       }
     }
     template {
       metadata {
         labels = {
-          app = local.echo.service_name
+          app = var.echo_service.name
         }
       }
       spec {
         container {
-          name  = var.resource_name
-          image = local.echo.image_url
+          name              = var.echo_service.name
+          image             = local.echo_image
+          image_pull_policy = "IfNotPresent"
           env_from {
             config_map_ref {
               name = kubernetes_config_map.echo.metadata[0].name
@@ -44,17 +49,17 @@ resource "kubernetes_deployment" "echo" {
 
 resource "kubernetes_service" "echo" {
   metadata {
-    name      = local.echo.service_name
+    name      = var.echo_service.name
     namespace = data.kubernetes_namespace.quota.metadata[0].name
   }
   spec {
     selector = {
-      app = local.echo.service_name
+      app = var.echo_service.name
     }
     type = "NodePort"
     port {
-      port        = 8080
-      target_port = "8080"
+      port        = tostring(var.echo_service.port)
+      target_port = tostring(var.echo_service.port)
     }
   }
 }

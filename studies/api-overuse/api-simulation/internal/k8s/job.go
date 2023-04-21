@@ -1,4 +1,4 @@
-package job
+package k8s
 
 import (
 	"context"
@@ -44,17 +44,6 @@ func (js *Jobs) init(ctx context.Context, name string) (*batchv1.Job, error) {
 			Namespace: js.namespace.name,
 		},
 	}, nil
-}
-
-func (js *Jobs) Exists(ctx context.Context, name string) error {
-	job, err := js.init(ctx, name)
-	if err != nil {
-		return err
-	}
-
-	key := k8s.ObjectKeyFromObject(job)
-
-	return js.internal.Get(ctx, key, job)
 }
 
 func (js *Jobs) Start(ctx context.Context, spec *Spec) (*batchv1.Job, error) {

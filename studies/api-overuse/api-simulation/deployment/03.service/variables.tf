@@ -1,34 +1,42 @@
-variable "project" {
+variable "namespace" {
   type        = string
-  description = "The Google Cloud Platform (GCP) project within which resources are provisioned"
-}
-
-variable "region" {
-  type        = string
-  description = "The Google Cloud Platform (GCP) region in which to provision resources"
-}
-
-variable "artifact_registry_id" {
-  type        = string
-  description = "The id assigned to the Artifact Registry repository"
-}
-
-variable "echo_image_name_tag" {
-  type        = string
-  description = "The name and tag of the echo service image i.e. 'echo:latest'"
+  description = "The Kubernetes namespace"
 }
 
 variable "redis_service_name" {
   type        = string
-  description = "The name of the kubernetes service exposing redis"
+  description = "The name of the Kubernetes service exposing redis"
 }
 
-variable "resource_name" {
+variable "image_tag" {
   type        = string
-  description = "The common resource name applied to shared resources such as namespace, etc"
+  description = "The image tag to reference for the container images"
+  default     = "latest"
 }
 
-variable "service_port" {
-  type        = number
-  description = "The port to bind to the quota service"
+variable "image_repository" {
+  type        = string
+  description = "The image repository to reference for the container images"
+  default     = "ko.local"
+}
+
+variable "echo_service" {
+  type = object({
+    name     = string
+    image_id = string
+    port     = number
+  })
+
+  description = "Echo service configuration"
+}
+
+variable "quota_service" {
+  type = object({
+    name               = string
+    image_id           = string
+    port               = number
+    refresher_image_id = string
+  })
+
+  description = "Quota service configuration"
 }
