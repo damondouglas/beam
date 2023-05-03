@@ -1,0 +1,20 @@
+plugins { id 'org.apache.beam.module' }
+
+applyJavaNature(
+        exportJavadoc: false,
+        publish: false,
+)
+
+description = "Apache Beam :: Test Infra :: Pipelines"
+ext.summary = "Various Beam pipelines to support testing"
+
+dependencies {
+    implementation enforcedPlatform(library.java.google_cloud_platform_libraries_bom)
+    implementation library.java.vendored_guava_26_0_jre
+    implementation library.java.google_api_services_dataflow
+    implementation project(path: ":sdks:java:core", configuration: "shadow")
+    implementation project(":sdks:java:extensions:google-cloud-platform-core")
+    implementation project(":sdks:java:io:google-cloud-platform")
+    implementation project(":runners:google-cloud-dataflow-java")
+    runtimeOnly project(path: ":runners:direct-java", configuration: "shadow")
+}
