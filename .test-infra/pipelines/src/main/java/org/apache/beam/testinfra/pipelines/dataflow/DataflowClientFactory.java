@@ -17,20 +17,22 @@
  */
 package org.apache.beam.testinfra.pipelines.dataflow;
 
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
-import org.apache.beam.sdk.extensions.gcp.util.Transport;
+import com.google.dataflow.v1beta3.JobsV1Beta3Grpc;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.auth.MoreCallCredentials;
 
-public class DataflowClientFactory {
+@SuppressWarnings("ForbidNonVendoredGrpcProtobuf")
+final class DataflowClientFactory {
 
-  public static com.google.api.services.dataflow.Dataflow.Builder create(GcpOptions options)
-      throws GeneralSecurityException, IOException {
-    return new com.google.api.services.dataflow.Dataflow.Builder(
-        Transport.getTransport(),
-        Transport.getJsonFactory(),
-        GoogleNetHttpTransport.newTrustedTransport().createRequestFactory().getInitializer())
-        .setApplicationName(options.getJobName());
+  static ManagedChannel channel(DataflowClientFactoryConfiguration configuration) {
+    return ManagedChannelBuilder.forTarget(configuration.getDataflowTarget()).build();
+  }
+
+  static JobsV1Beta3Grpc.JobsV1Beta3BlockingStub createJobsClient(
+      DataflowClientFactoryConfiguration configuration) {
+    ManagedChannel channel = channel(configuration);
+    return JobsV1Beta3Grpc.newBlockingStub(channel)
+        .withCallCredentials(MoreCallCredentials.from(configuration.getCredentials()));
   }
 }

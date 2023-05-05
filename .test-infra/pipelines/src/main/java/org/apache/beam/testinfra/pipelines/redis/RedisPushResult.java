@@ -15,13 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.dataflow;
+package org.apache.beam.testinfra.pipelines.redis;
 
-import com.google.api.services.dataflow.Dataflow;
-import com.google.api.services.dataflow.model.ListJobsResponse;
 import java.util.Map;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.PInput;
@@ -30,42 +29,31 @@ import org.apache.beam.sdk.values.PValue;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableMap;
 
-public class ListJobsResult implements POutput {
+public class RedisPushResult implements POutput {
 
-  public static ListJobsResult from(PCollectionTuple pct) {
-    return new ListJobsResult(pct);
+  static RedisPushResult of(PCollectionTuple pct) {
+    return new RedisPushResult(pct);
   }
 
-  static final TupleTag<ListJobsRequest> WITH_NEXT_PAGE_TOKEN =
-      new TupleTag<ListJobsRequest>() {};
+  static final TupleTag<KV<String, Long>> SUCCESS = new TupleTag<KV<String, Long>>() {};
 
-  static final TupleTag<ListJobsResponse> SUCCESS = new TupleTag<ListJobsResponse>() {};
-
-  static final TupleTag<DataflowApiError> FAILURE = new TupleTag<DataflowApiError>() {};
+  static final TupleTag<KV<String, RedisError>> FAILURE = new TupleTag<KV<String, RedisError>>() {};
 
   private final Pipeline pipeline;
+  private final PCollection<KV<String, Long>> success;
+  private final PCollection<KV<String, RedisError>> failure;
 
-  private final PCollection<ListJobsRequest> withNextPageToken;
-  private final PCollection<ListJobsResponse> success;
-
-  private final PCollection<DataflowApiError> failure;
-
-  private ListJobsResult(PCollectionTuple pct) {
+  private RedisPushResult(PCollectionTuple pct) {
     this.pipeline = pct.getPipeline();
-    this.withNextPageToken = pct.get(WITH_NEXT_PAGE_TOKEN);
     this.success = pct.get(SUCCESS);
     this.failure = pct.get(FAILURE);
   }
 
-  public PCollection<ListJobsRequest> getWithNextPageToken() {
-    return withNextPageToken;
-  }
-
-  public PCollection<ListJobsResponse> getSuccess() {
+  public PCollection<KV<String, Long>> getSuccess() {
     return success;
   }
 
-  public PCollection<DataflowApiError> getFailure() {
+  public PCollection<KV<String, RedisError>> getFailure() {
     return failure;
   }
 
@@ -77,7 +65,6 @@ public class ListJobsResult implements POutput {
   @Override
   public Map<TupleTag<?>, PValue> expand() {
     return ImmutableMap.of(
-        WITH_NEXT_PAGE_TOKEN, withNextPageToken,
         SUCCESS, success,
         FAILURE, failure);
   }

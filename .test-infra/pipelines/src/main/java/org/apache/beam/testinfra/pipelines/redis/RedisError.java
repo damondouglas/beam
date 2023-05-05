@@ -15,44 +15,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.dataflow;
+package org.apache.beam.testinfra.pipelines.redis;
 
 import com.google.auto.value.AutoValue;
-import java.time.Instant;
-import org.apache.beam.sdk.schemas.AutoValueSchema;
-import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
+import javax.annotation.Nullable;
 
-@DefaultSchema(AutoValueSchema.class)
 @AutoValue
-public abstract class DataflowApiError {
+public abstract class RedisError {
 
-  public static Builder builder() {
-    return new AutoValue_DataflowApiError.Builder();
-  }
+  public abstract String getKey();
 
-  public abstract String getRequestPayload();
+  @Nullable
+  public abstract String getValue();
 
-  public abstract String getErrorMessage();
+  public abstract String getOperation();
+
+  public abstract String getMessage();
 
   public abstract String getStackTrace();
 
-  public abstract Instant getObservedTime();
-
-  public abstract Integer getStatusCode();
+  public static Builder builder() {
+    return new AutoValue_RedisError.Builder();
+  }
 
   @AutoValue.Builder
   public abstract static class Builder {
 
-    public abstract Builder setRequestPayload(String value);
+    public abstract Builder setKey(String newKey);
 
-    public abstract Builder setErrorMessage(String value);
+    public abstract Builder setValue(String newValue);
 
-    public abstract Builder setStackTrace(String value);
+    public abstract Builder setOperation(String newOperation);
 
-    public abstract Builder setObservedTime(Instant value);
+    public abstract Builder setMessage(String newMessage);
 
-    public abstract Builder setStatusCode(Integer value);
+    public abstract Builder setStackTrace(String newStackTrace);
 
-    public abstract DataflowApiError build();
+    public abstract RedisError build();
   }
 }

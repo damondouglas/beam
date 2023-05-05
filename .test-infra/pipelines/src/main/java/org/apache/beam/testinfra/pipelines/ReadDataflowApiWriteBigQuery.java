@@ -17,47 +17,48 @@
  */
 package org.apache.beam.testinfra.pipelines;
 
-import com.google.api.services.dataflow.Dataflow.Projects.Jobs.List;
-import com.google.api.services.dataflow.model.ListJobsResponse;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
-import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
-import org.apache.beam.runners.dataflow.util.DataflowTransport;
+import com.google.dataflow.v1beta3.ListJobsRequest;
+import com.google.dataflow.v1beta3.ListJobsResponse;
 import org.apache.beam.sdk.Pipeline;
-import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.testinfra.pipelines.bigquery.BigQueryWriteOptions;
-import org.apache.beam.testinfra.pipelines.dataflow.DataflowClientFactory;
-import org.apache.beam.testinfra.pipelines.dataflow.DataflowReadOptions;
-import org.apache.beam.testinfra.pipelines.dataflow.ListJobs;
-import org.apache.beam.testinfra.pipelines.dataflow.ListJobsRequest;
-import org.apache.beam.testinfra.pipelines.dataflow.ListJobsResult;
+import org.apache.beam.testinfra.pipelines.dataflow.DataflowJobsOptions;
+import org.apache.beam.testinfra.pipelines.dataflow.DataflowListJobs;
+import org.apache.beam.testinfra.pipelines.dataflow.DataflowListJobsResult;
 import org.apache.beam.testinfra.pipelines.redis.RedisOptions;
 
 public class ReadDataflowApiWriteBigQuery {
 
-  public interface Options extends DataflowReadOptions, BigQueryWriteOptions, RedisOptions {}
+  public interface Options extends DataflowJobsOptions, BigQueryWriteOptions, RedisOptions {}
 
-  public static void main(String[] args) throws GeneralSecurityException, IOException {
+  public static void main(String[] args) {
     Options options = PipelineOptionsFactory.fromArgs(args).withValidation().as(Options.class);
     Pipeline pipeline = Pipeline.create(options);
-    List list =
-        DataflowTransport.newDataflowClient(options.as(DataflowPipelineOptions.class)).build().projects().jobs().list(options.getDataflowProject());
-    // ListJobsResponse response = list.setLocation(options.getDataflowLocation()).execute();
-    // System.out.println(response.toPrettyString());
-    ListJobsRequest request = new ListJobsRequest(list);
-    PCollection<ListJobsRequest> requests = pipeline.apply(Create.of(request));
-    ListJobsResult result = requests.apply(new ListJobs());
-    result.getSuccess().apply(ParDo.of(new DoFn<ListJobsResponse, ListJobsResponse>() {
-      @ProcessElement
-      public void process(@Element ListJobsResponse response) {
-        System.out.println(response);
-      }
-    }));
+
+    PCollection<ListJobsRequest> seed =
+        pipeline.apply(
+            "Seed ListJobsRequest",
+            Create.of(
+                ListJobsRequest.newBuilder()
+                    .setProjectId(options.getDataflowProjectId())
+                    .setLocation(options.getDataflowLocation())
+                    .build()));
+
+    DataflowListJobsResult result = seed.apply(DataflowListJobs.create(options));
+    result
+        .getSuccess()
+        .apply(
+            ParDo.of(
+                new DoFn<ListJobsResponse, Void>() {
+                  @ProcessElement
+                  public void process(@Element ListJobsResponse response) {
+                    System.out.println(response);
+                  }
+                }));
 
     pipeline.run();
   }

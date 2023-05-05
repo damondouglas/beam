@@ -18,5 +18,18 @@
 package org.apache.beam.testinfra.pipelines.redis;
 
 import org.apache.beam.sdk.options.PipelineOptions;
+import redis.clients.jedis.HostAndPort;
 
-public interface RedisOptions extends PipelineOptions {}
+public interface RedisOptions extends PipelineOptions {
+  String getRedisHost();
+
+  void setRedisHost(String value);
+
+  Integer getRedisPort();
+
+  void setRedisPort(Integer value);
+
+  static HostAndPort hostAndPort(RedisOptions options) {
+    return new HostAndPort(options.getRedisHost(), options.getRedisPort());
+  }
+}
