@@ -15,19 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.bigquery;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.Validation.Required;
+// Provision Eventarc and Workflow service account
+resource "google_service_account" "default" {
+  account_id  = var.eventarc_workflow_service_account_id
+  description = "Executes and processes Eventarc and Workflows"
+}
 
-/** Options for writing to BigQuery. */
-public interface BigQueryWriteOptions extends PipelineOptions {
-  @Description("BigQuery Dataset")
-  @Required
-  @JsonIgnore
-  DatasetReferenceOptionValue getDataset();
-
-  void setDataset(DatasetReferenceOptionValue value);
+// Add IAM roles to Eventarc and Workflow service account
+resource "google_project_iam_member" "default" {
+  for_each = toset([
+    "roles/pubsub.publisher",
+    "roles/workflows.invoker",
+    "roles/eventarc.eventReceiver",
+  ])
+  member  = "serviceAccount:${google_service_account.default.email}"
+  role    = each.key
+  project = var.project
 }

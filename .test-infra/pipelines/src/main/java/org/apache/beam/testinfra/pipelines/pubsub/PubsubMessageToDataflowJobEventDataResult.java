@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.redis;
+package org.apache.beam.testinfra.pipelines.pubsub;
 
+import com.google.events.cloud.dataflow.v1beta3.JobEventData;
 import java.util.Map;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.PInput;
@@ -28,48 +28,58 @@ import org.apache.beam.sdk.values.POutput;
 import org.apache.beam.sdk.values.PValue;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableMap;
+import org.checkerframework.checker.initialization.qual.Initialized;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
 
-public class RedisPushResult implements POutput {
+public class PubsubMessageToDataflowJobEventDataResult implements POutput {
 
-  static RedisPushResult of(PCollectionTuple pct) {
-    return new RedisPushResult(pct);
+  public static PubsubMessageToDataflowJobEventDataResult of(PCollectionTuple pct) {
+    return new PubsubMessageToDataflowJobEventDataResult(pct);
   }
 
-  static final TupleTag<KV<String, Long>> SUCCESS = new TupleTag<KV<String, Long>>() {};
-
-  static final TupleTag<KV<String, RedisError>> FAILURE = new TupleTag<KV<String, RedisError>>() {};
+  static final TupleTag<JobEventData> SUCCESS = new TupleTag<JobEventData>() {};
+  static final TupleTag<PubsubMessageToDataflowJobEventError> ERROR =
+      new TupleTag<PubsubMessageToDataflowJobEventError>() {};
 
   private final Pipeline pipeline;
-  private final PCollection<KV<String, Long>> success;
-  private final PCollection<KV<String, RedisError>> failure;
 
-  private RedisPushResult(PCollectionTuple pct) {
+  private final PCollection<JobEventData> success;
+
+  private final PCollection<PubsubMessageToDataflowJobEventError> error;
+
+  private PubsubMessageToDataflowJobEventDataResult(PCollectionTuple pct) {
     this.pipeline = pct.getPipeline();
     this.success = pct.get(SUCCESS);
-    this.failure = pct.get(FAILURE);
+    this.error = pct.get(ERROR);
   }
 
-  public PCollection<KV<String, Long>> getSuccess() {
+  public PCollection<JobEventData> getSuccess() {
     return success;
   }
 
-  public PCollection<KV<String, RedisError>> getFailure() {
-    return failure;
+  public PCollection<PubsubMessageToDataflowJobEventError> getError() {
+    return error;
   }
 
   @Override
-  public Pipeline getPipeline() {
+  public @UnknownKeyFor @NonNull @Initialized Pipeline getPipeline() {
     return pipeline;
   }
 
   @Override
-  public Map<TupleTag<?>, PValue> expand() {
+  public Map<TupleTag<?>, PValue>
+      expand() {
     return ImmutableMap.of(
         SUCCESS, success,
-        FAILURE, failure);
+        ERROR, error);
   }
 
   @Override
   public void finishSpecifyingOutput(
-      String transformName, PInput input, PTransform<?, ?> transform) {}
+      @UnknownKeyFor @NonNull @Initialized String transformName,
+      @UnknownKeyFor @NonNull @Initialized PInput input,
+      @UnknownKeyFor @NonNull @Initialized
+          PTransform<@UnknownKeyFor @NonNull @Initialized ?, @UnknownKeyFor @NonNull @Initialized ?>
+              transform) {}
 }

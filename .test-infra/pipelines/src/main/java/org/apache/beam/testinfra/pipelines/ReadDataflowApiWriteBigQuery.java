@@ -17,48 +17,33 @@
  */
 package org.apache.beam.testinfra.pipelines;
 
-import com.google.dataflow.v1beta3.ListJobsRequest;
-import com.google.dataflow.v1beta3.ListJobsResponse;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.io.TextIO;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.transforms.Create;
-import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.testinfra.pipelines.bigquery.BigQueryWriteOptions;
 import org.apache.beam.testinfra.pipelines.dataflow.DataflowJobsOptions;
-import org.apache.beam.testinfra.pipelines.dataflow.DataflowListJobs;
-import org.apache.beam.testinfra.pipelines.dataflow.DataflowListJobsResult;
-import org.apache.beam.testinfra.pipelines.redis.RedisOptions;
+import org.apache.beam.testinfra.pipelines.pubsub.PubsubReadOptions;
+import org.joda.time.Duration;
 
 public class ReadDataflowApiWriteBigQuery {
 
-  public interface Options extends DataflowJobsOptions, BigQueryWriteOptions, RedisOptions {}
+//  public interface Options extends DataflowJobsOptions, PubsubReadOptions, BigQueryWriteOptions {}
+  public interface Options extends PubsubReadOptions {}
 
   public static void main(String[] args) {
     Options options = PipelineOptionsFactory.fromArgs(args).withValidation().as(Options.class);
     Pipeline pipeline = Pipeline.create(options);
 
-    PCollection<ListJobsRequest> seed =
-        pipeline.apply(
-            "Seed ListJobsRequest",
-            Create.of(
-                ListJobsRequest.newBuilder()
-                    .setProjectId(options.getDataflowProjectId())
-                    .setLocation(options.getDataflowLocation())
-                    .build()));
-
-    DataflowListJobsResult result = seed.apply(DataflowListJobs.create(options));
-    result
-        .getSuccess()
+    pipeline
+        .apply(PubsubIO.readStrings().fromSubscription(options.getSubscription().getValue().getPath()))
+        .apply(Window.into(FixedWindows.of(Duration.standardSeconds(1L))))
         .apply(
-            ParDo.of(
-                new DoFn<ListJobsResponse, Void>() {
-                  @ProcessElement
-                  public void process(@Element ListJobsResponse response) {
-                    System.out.println(response);
-                  }
-                }));
+            TextIO.write()
+                .to("/tmp/dataflow-job-v1beta3-status-changed/event-")
+                .withSuffix(".ndjson"));
 
     pipeline.run();
   }

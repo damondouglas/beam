@@ -15,19 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.bigquery;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.Validation.Required;
+// Provision Storage Bucket for use by Dataflow Worker as temporary storage
+resource "google_storage_bucket" "temporary" {
+  location = var.region
+  name     = replace(var.workflow_resource_name_base, "_", "-")
+  labels   = {
+    purpose = "infra-pipelines-temp-storage"
+  }
+  uniform_bucket_level_access = true
+}
 
-/** Options for writing to BigQuery. */
-public interface BigQueryWriteOptions extends PipelineOptions {
-  @Description("BigQuery Dataset")
-  @Required
-  @JsonIgnore
-  DatasetReferenceOptionValue getDataset();
-
-  void setDataset(DatasetReferenceOptionValue value);
+// Enable Dataflow Worker Service Account to manage objects in temporary storage
+resource "google_storage_bucket_iam_member" "temporary" {
+  bucket = google_storage_bucket.temporary.id
+  member = "serviceAccount:${data.google_service_account.dataflow_worker.email}"
+  role   = "roles/storage.objectAdmin"
 }

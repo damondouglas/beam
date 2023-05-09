@@ -15,19 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.bigquery;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.Validation.Required;
+// Provision a service account that will be bound to the Dataflow pipeline
+resource "google_service_account" "dataflow_worker" {
+  depends_on   = [google_project_service.required_services]
+  account_id   = var.dataflow_worker_service_account_id
+  display_name = var.dataflow_worker_service_account_id
+  description  = "The service account bound to the compute engine instance provisioned to run Dataflow Jobs"
+}
 
-/** Options for writing to BigQuery. */
-public interface BigQueryWriteOptions extends PipelineOptions {
-  @Description("BigQuery Dataset")
-  @Required
-  @JsonIgnore
-  DatasetReferenceOptionValue getDataset();
-
-  void setDataset(DatasetReferenceOptionValue value);
+// Provision IAM roles for the Dataflow runner service account
+resource "google_project_iam_member" "dataflow_worker_service_account_roles" {
+  depends_on = [google_project_service.required_services]
+  for_each   = toset([
+    "roles/dataflow.worker",
+  ])
+  role    = each.key
+  member  = "serviceAccount:${google_service_account.dataflow_worker.email}"
+  project = var.project
 }

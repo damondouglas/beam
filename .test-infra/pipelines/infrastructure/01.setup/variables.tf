@@ -15,19 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.bigquery;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.Validation.Required;
+variable "project" {
+  type        = string
+  description = "The Google Cloud Platform (GCP) project within which resources are provisioned"
+}
 
-/** Options for writing to BigQuery. */
-public interface BigQueryWriteOptions extends PipelineOptions {
-  @Description("BigQuery Dataset")
-  @Required
-  @JsonIgnore
-  DatasetReferenceOptionValue getDataset();
+variable "region" {
+  type        = string
+  description = "The Google Cloud Platform (GCP) region in which to provision resources"
+}
 
-  void setDataset(DatasetReferenceOptionValue value);
+variable "dataflow_worker_service_account_id" {
+  type        = string
+  description = "The Dataflow Worker Service Account ID"
 }

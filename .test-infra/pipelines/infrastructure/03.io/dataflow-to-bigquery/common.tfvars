@@ -15,19 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.bigquery;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.Validation.Required;
-
-/** Options for writing to BigQuery. */
-public interface BigQueryWriteOptions extends PipelineOptions {
-  @Description("BigQuery Dataset")
-  @Required
-  @JsonIgnore
-  DatasetReferenceOptionValue getDataset();
-
-  void setDataset(DatasetReferenceOptionValue value);
-}
+region                               = "us-central1"
+eventarc_workflow_service_account_id = "eventarc-workflow-sa"
+dataflow_worker_service_account_id   = "infra-pipelines-worker"
+workflow_resource_name_base          = "dataflow-job-v1beta3-status-changed"

@@ -15,19 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.bigquery;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.Validation.Required;
+// Provision the required Google Cloud services
+resource "google_project_service" "required_services" {
+  for_each = toset([
+    "artifactregistry",
+    "bigquery",
+    "cloudbuild",
+    "compute",
+    "dataflow",
+    "eventarc",
+    "iam",
+    "pubsub",
+    "workflows",
+  ])
 
-/** Options for writing to BigQuery. */
-public interface BigQueryWriteOptions extends PipelineOptions {
-  @Description("BigQuery Dataset")
-  @Required
-  @JsonIgnore
-  DatasetReferenceOptionValue getDataset();
-
-  void setDataset(DatasetReferenceOptionValue value);
+  service            = "${each.key}.googleapis.com"
+  disable_on_destroy = false
 }

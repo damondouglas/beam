@@ -21,8 +21,9 @@ import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.Validation;
+import org.apache.beam.sdk.options.Validation.Required;
 
+/** Options required for calling the Dataflow API. */
 public interface DataflowJobsOptions extends PipelineOptions {
 
   @Description("Target for use with the Google Cloud Dataflow API")
@@ -32,12 +33,12 @@ public interface DataflowJobsOptions extends PipelineOptions {
 
   void setDataflowTarget(String value);
 
-  @Validation.Required
+  @Required
   String getDataflowProjectId();
 
   void setDataflowProjectId(String value);
 
-  @Validation.Required
+  @Required
   String getDataflowLocation();
 
   void setDataflowLocation(String value);

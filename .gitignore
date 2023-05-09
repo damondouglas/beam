@@ -136,6 +136,8 @@ playground/frontend/playground_components_dev/pubspec.lock
 **/*.tfstate.*
 **/*.hcl
 **/*.tfvars
+!**/common.tfvars
+!**/.terraform.lock.hcl
 
 # Ignore Katas auto-generated files
 **/*-remote-info.yaml

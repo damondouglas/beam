@@ -15,21 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.redis;
 
-import org.apache.beam.sdk.options.PipelineOptions;
-import redis.clients.jedis.HostAndPort;
+// Provision BigQuery dataset sink to store Dataflow API Job data
+resource "google_bigquery_dataset" "sink" {
+  dataset_id  = replace(var.workflow_resource_name_base, "-", "_")
+  description = "Stores Dataflow API Jobs data"
+}
 
-public interface RedisOptions extends PipelineOptions {
-  String getRedisHost();
-
-  void setRedisHost(String value);
-
-  Integer getRedisPort();
-
-  void setRedisPort(Integer value);
-
-  static HostAndPort hostAndPort(RedisOptions options) {
-    return new HostAndPort(options.getRedisHost(), options.getRedisPort());
-  }
+// Provision IAM roles to write to BigQuery sink
+resource "google_bigquery_dataset_iam_member" "dataflow_worker_roles" {
+  dataset_id = google_bigquery_dataset.sink.dataset_id
+  member     = "serviceAccount:${data.google_service_account.dataflow_worker.email}"
+  role       = "roles/bigquery.dataEditor"
 }

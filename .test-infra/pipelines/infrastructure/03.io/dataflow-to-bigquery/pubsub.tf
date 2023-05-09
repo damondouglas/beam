@@ -15,19 +15,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.bigquery;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.Validation.Required;
+// Provision a Pub/Sub topic to forward Eventarc Workflow event payloads
+resource "google_pubsub_topic" "workflow_topic" {
+  name = var.workflow_resource_name_base
+}
 
-/** Options for writing to BigQuery. */
-public interface BigQueryWriteOptions extends PipelineOptions {
-  @Description("BigQuery Dataset")
-  @Required
-  @JsonIgnore
-  DatasetReferenceOptionValue getDataset();
+// Provision a Pub/Sub subscription to the Eventarc Workflow event topic
+resource "google_pubsub_subscription" "source" {
+  name  = "${var.workflow_resource_name_base}-sub"
+  topic = google_pubsub_topic.workflow_topic.name
+}
 
-  void setDataset(DatasetReferenceOptionValue value);
+// Allow Dataflow Worker Service Account to subscribe to Pub/Sub subscription
+resource "google_pubsub_subscription_iam_member" "source" {
+  for_each = toset([
+    "roles/pubsub.viewer",
+    "roles/pubsub.subscriber",
+  ])
+  member       = "serviceAccount:${data.google_service_account.dataflow_worker.email}"
+  role         = each.key
+  subscription = google_pubsub_subscription.source.id
 }

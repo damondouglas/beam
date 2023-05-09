@@ -15,42 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.redis;
+package org.apache.beam.testinfra.pipelines.pubsub;
 
 import com.google.auto.value.AutoValue;
-import javax.annotation.Nullable;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 @AutoValue
-public abstract class RedisError {
+public abstract class PubsubMessageToDataflowJobEventError {
 
-  public abstract String getKey();
-
-  @Nullable
-  public abstract String getValue();
-
-  public abstract String getOperation();
+  public abstract PubsubMessage getPubsubMessage();
 
   public abstract String getMessage();
 
-  public abstract String getStackTrace();
-
   public static Builder builder() {
-    return new AutoValue_RedisError.Builder();
+    return new AutoValue_PubsubMessageToDataflowJobEventError.Builder();
   }
 
   @AutoValue.Builder
   public abstract static class Builder {
-
-    public abstract Builder setKey(String newKey);
-
-    public abstract Builder setValue(String newValue);
-
-    public abstract Builder setOperation(String newOperation);
+    public abstract Builder setPubsubMessage(PubsubMessage newPubsubMessage);
 
     public abstract Builder setMessage(String newMessage);
 
-    public abstract Builder setStackTrace(String newStackTrace);
-
-    public abstract RedisError build();
+    public abstract PubsubMessageToDataflowJobEventError build();
   }
 }
