@@ -32,14 +32,4 @@ public interface DataflowJobsOptions extends PipelineOptions {
   String getDataflowTarget();
 
   void setDataflowTarget(String value);
-
-  @Required
-  String getDataflowProjectId();
-
-  void setDataflowProjectId(String value);
-
-  @Required
-  String getDataflowLocation();
-
-  void setDataflowLocation(String value);
 }

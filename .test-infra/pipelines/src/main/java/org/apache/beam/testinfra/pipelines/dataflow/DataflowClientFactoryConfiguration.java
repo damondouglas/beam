@@ -23,9 +23,9 @@ import java.io.Serializable;
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 
 @AutoValue
-abstract class DataflowClientFactoryConfiguration implements Serializable {
+public abstract class DataflowClientFactoryConfiguration implements Serializable {
 
-  static Builder builder(DataflowJobsOptions options) {
+  public static Builder builder(DataflowJobsOptions options) {
     Credentials credentials = credentialsFrom(options);
     return new AutoValue_DataflowClientFactoryConfiguration.Builder()
         .setCredentials(credentials)
@@ -41,11 +41,11 @@ abstract class DataflowClientFactoryConfiguration implements Serializable {
   abstract String getDataflowTarget();
 
   @AutoValue.Builder
-  abstract static class Builder {
-    public abstract Builder setCredentials(Credentials newCredentials);
+  public abstract static class Builder {
+    abstract Builder setCredentials(Credentials newCredentials);
 
-    public abstract Builder setDataflowTarget(String newDataflowRootUrl);
+    abstract Builder setDataflowTarget(String newDataflowRootUrl);
 
-    abstract DataflowClientFactoryConfiguration build();
+    public abstract DataflowClientFactoryConfiguration build();
   }
 }

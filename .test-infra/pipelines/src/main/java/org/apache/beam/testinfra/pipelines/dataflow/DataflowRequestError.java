@@ -15,41 +15,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.conversions;
+package org.apache.beam.testinfra.pipelines.dataflow;
 
 import com.google.auto.value.AutoValue;
-import java.io.Serializable;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
-import org.joda.time.Instant;
 
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue
-public abstract class ConversionError<SourceT> implements Serializable {
+public abstract class DataflowRequestError<RequestT> {
 
-  public static <SourceT> Builder<SourceT> builder() {
-    return new AutoValue_ConversionError.Builder<>();
+  public static <RequestT> Builder<RequestT> builder() {
+    return new AutoValue_DataflowRequestError.Builder<>();
   }
 
-  public abstract Instant getObservationTime();
-
-  public abstract SourceT getSource();
+  public abstract RequestT getRequest();
 
   public abstract String getMessage();
 
   public abstract String getStackTrace();
 
   @AutoValue.Builder
-  public abstract static class Builder<SourceT> {
+  public abstract static class Builder<RequestT> {
 
-    public abstract Builder<SourceT> setObservationTime(Instant newObservationTime);
+    public abstract Builder<RequestT> setRequest(RequestT newRequest);
 
-    public abstract Builder<SourceT> setSource(SourceT newSource);
+    public abstract Builder<RequestT> setMessage(String newMessage);
 
-    public abstract Builder<SourceT> setMessage(String newMessage);
+    public abstract Builder<RequestT> setStackTrace(String newStackTrace);
 
-    public abstract Builder<SourceT> setStackTrace(String newStackTrace);
-
-    public abstract ConversionError<SourceT> build();
+    public abstract DataflowRequestError<RequestT> build();
   }
 }
