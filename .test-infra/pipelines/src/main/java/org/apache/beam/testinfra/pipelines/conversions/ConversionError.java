@@ -15,28 +15,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.pubsub;
+package org.apache.beam.testinfra.pipelines.conversions;
 
 import com.google.auto.value.AutoValue;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import java.io.Serializable;
+import org.apache.beam.sdk.schemas.AutoValueSchema;
+import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 
+@DefaultSchema(AutoValueSchema.class)
 @AutoValue
-public abstract class PubsubMessageToDataflowJobEventError {
+public abstract class ConversionError<SourceT> implements Serializable {
 
-  public abstract PubsubMessage getPubsubMessage();
+  public static <SourceT> Builder<SourceT> builder() {
+    return new AutoValue_ConversionError.Builder<>();
+  }
+
+  public abstract SourceT getSource();
 
   public abstract String getMessage();
 
-  public static Builder builder() {
-    return new AutoValue_PubsubMessageToDataflowJobEventError.Builder();
-  }
+  public abstract String getStackTrace();
 
   @AutoValue.Builder
-  public abstract static class Builder {
-    public abstract Builder setPubsubMessage(PubsubMessage newPubsubMessage);
+  public abstract static class Builder<SourceT> {
 
-    public abstract Builder setMessage(String newMessage);
+    public abstract Builder<SourceT> setSource(SourceT newSource);
 
-    public abstract PubsubMessageToDataflowJobEventError build();
+    public abstract Builder<SourceT> setMessage(String newMessage);
+
+    public abstract Builder<SourceT> setStackTrace(String newStackTrace);
+
+    public abstract ConversionError<SourceT> build();
   }
 }

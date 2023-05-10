@@ -18,32 +18,18 @@
 package org.apache.beam.testinfra.pipelines;
 
 import org.apache.beam.sdk.Pipeline;
-import org.apache.beam.sdk.io.TextIO;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.transforms.windowing.FixedWindows;
-import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.testinfra.pipelines.bigquery.BigQueryWriteOptions;
 import org.apache.beam.testinfra.pipelines.dataflow.DataflowJobsOptions;
 import org.apache.beam.testinfra.pipelines.pubsub.PubsubReadOptions;
-import org.joda.time.Duration;
 
 public class ReadDataflowApiWriteBigQuery {
 
-//  public interface Options extends DataflowJobsOptions, PubsubReadOptions, BigQueryWriteOptions {}
-  public interface Options extends PubsubReadOptions {}
+  public interface Options extends DataflowJobsOptions, PubsubReadOptions, BigQueryWriteOptions {}
 
   public static void main(String[] args) {
     Options options = PipelineOptionsFactory.fromArgs(args).withValidation().as(Options.class);
     Pipeline pipeline = Pipeline.create(options);
-
-    pipeline
-        .apply(PubsubIO.readStrings().fromSubscription(options.getSubscription().getValue().getPath()))
-        .apply(Window.into(FixedWindows.of(Duration.standardSeconds(1L))))
-        .apply(
-            TextIO.write()
-                .to("/tmp/dataflow-job-v1beta3-status-changed/event-")
-                .withSuffix(".ndjson"));
 
     pipeline.run();
   }
