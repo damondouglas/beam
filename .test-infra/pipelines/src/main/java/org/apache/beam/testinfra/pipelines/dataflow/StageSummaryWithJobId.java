@@ -17,18 +17,30 @@
  */
 package org.apache.beam.testinfra.pipelines.dataflow;
 
-import org.apache.beam.sdk.options.Default;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.Hidden;
-import org.apache.beam.sdk.options.PipelineOptions;
+import com.google.auto.value.AutoValue;
+import com.google.dataflow.v1beta3.StageSummary;
+import org.apache.beam.sdk.schemas.AutoValueSchema;
+import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 
-/** Options required for calling the Dataflow API. */
-public interface DataflowJobsOptions extends PipelineOptions {
+@DefaultSchema(AutoValueSchema.class)
+@AutoValue
+public abstract class StageSummaryWithJobId {
 
-  @Description("Target for use with the Google Cloud Dataflow API")
-  @Default.String("dns:///dataflow.googleapis.com")
-  @Hidden
-  String getDataflowTarget();
+  public abstract String getJobId();
 
-  void setDataflowTarget(String value);
+  public abstract StageSummary getStageSummary();
+
+  public static Builder builder() {
+    return new AutoValue_StageSummaryWithJobId.Builder();
+  }
+
+  @AutoValue.Builder
+  public abstract static class Builder {
+
+    public abstract Builder setJobId(String value);
+
+    public abstract Builder setStageSummary(StageSummary value);
+
+    public abstract StageSummaryWithJobId build();
+  }
 }

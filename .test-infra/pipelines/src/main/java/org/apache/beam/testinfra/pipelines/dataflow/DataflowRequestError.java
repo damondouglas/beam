@@ -20,6 +20,7 @@ package org.apache.beam.testinfra.pipelines.dataflow;
 import com.google.auto.value.AutoValue;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
+import org.joda.time.Instant;
 
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue
@@ -28,6 +29,8 @@ public abstract class DataflowRequestError<RequestT> {
   public static <RequestT> Builder<RequestT> builder() {
     return new AutoValue_DataflowRequestError.Builder<>();
   }
+
+  public abstract Instant getObservedTime();
 
   public abstract RequestT getRequest();
 
@@ -38,11 +41,13 @@ public abstract class DataflowRequestError<RequestT> {
   @AutoValue.Builder
   public abstract static class Builder<RequestT> {
 
-    public abstract Builder<RequestT> setRequest(RequestT newRequest);
+    public abstract Builder<RequestT> setObservedTime(Instant value);
 
-    public abstract Builder<RequestT> setMessage(String newMessage);
+    public abstract Builder<RequestT> setRequest(RequestT value);
 
-    public abstract Builder<RequestT> setStackTrace(String newStackTrace);
+    public abstract Builder<RequestT> setMessage(String value);
+
+    public abstract Builder<RequestT> setStackTrace(String value);
 
     public abstract DataflowRequestError<RequestT> build();
   }

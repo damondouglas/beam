@@ -17,18 +17,30 @@
  */
 package org.apache.beam.testinfra.pipelines.dataflow;
 
-import org.apache.beam.sdk.options.Default;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.Hidden;
-import org.apache.beam.sdk.options.PipelineOptions;
+import com.google.auto.value.AutoValue;
+import com.google.dataflow.v1beta3.JobMetrics;
+import org.apache.beam.sdk.schemas.AutoValueSchema;
+import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 
-/** Options required for calling the Dataflow API. */
-public interface DataflowJobsOptions extends PipelineOptions {
+@DefaultSchema(AutoValueSchema.class)
+@AutoValue
+public abstract class JobMetricsWithJobId {
 
-  @Description("Target for use with the Google Cloud Dataflow API")
-  @Default.String("dns:///dataflow.googleapis.com")
-  @Hidden
-  String getDataflowTarget();
+  public static Builder builder() {
+    return new AutoValue_JobMetricsWithJobId.Builder();
+  }
 
-  void setDataflowTarget(String value);
+  public abstract String getJobId();
+
+  public abstract JobMetrics getJobMetrics();
+
+  @AutoValue.Builder
+  public abstract static class Builder {
+
+    public abstract Builder setJobId(String value);
+
+    public abstract Builder setJobMetrics(JobMetrics value);
+
+    public abstract JobMetricsWithJobId build();
+  }
 }

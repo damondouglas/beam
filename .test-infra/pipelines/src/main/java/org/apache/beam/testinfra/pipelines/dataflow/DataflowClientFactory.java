@@ -18,6 +18,7 @@
 package org.apache.beam.testinfra.pipelines.dataflow;
 
 import com.google.dataflow.v1beta3.JobsV1Beta3Grpc;
+import com.google.dataflow.v1beta3.MetricsV1Beta3Grpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.auth.MoreCallCredentials;
@@ -33,6 +34,13 @@ final class DataflowClientFactory {
       DataflowClientFactoryConfiguration configuration) {
     ManagedChannel channel = channel(configuration);
     return JobsV1Beta3Grpc.newBlockingStub(channel)
+        .withCallCredentials(MoreCallCredentials.from(configuration.getCredentials()));
+  }
+
+  static MetricsV1Beta3Grpc.MetricsV1Beta3BlockingStub createMetricsClient(
+      DataflowClientFactoryConfiguration configuration) {
+    ManagedChannel channel = channel(configuration);
+    return MetricsV1Beta3Grpc.newBlockingStub(channel)
         .withCallCredentials(MoreCallCredentials.from(configuration.getCredentials()));
   }
 }
