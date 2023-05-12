@@ -54,25 +54,24 @@ public class BigQueryWrites {
   private static final Clustering JOB_CLUSTERING =
       new Clustering().setFields(ImmutableList.of("type", "location"));
 
-  private static final String JOB_TABLE_ID_PREFIX = "jobs";
-
-  private static final String METRICS_TABLE_ID_PREFIX = "job_metrics";
-
-  private static final String STAGES_SUMMARY_TABLE_ID_PREFIX = "stages_summary";
-
-  private static final String WORKER_DETAILS_TABLE_ID_PREFIX = "worker_details";
-
   private static final String CONVERSION_ERRORS_TABLE_ID_PREFIX = "conversion_errors";
 
-  private static final String GET_JOBS_ERRORS_TABLE_ID_PREFIX = "dataflow_get_jobs_errors";
+  private static final String JOB_EXECUTION_DETAILS = "job_execution_details";
 
-  private static final String GET_JOB_EXECUTION_DETAILS_ERRORS_TABLE_ID_PREFIX =
-      "dataflow_get_job_metrics_errors";
+  private static final String JOB_EXECUTION_DETAILS_ERRORS = "job_execution_details_request_errors";
 
-  private static final String GET_JOB_METRICS_TABLE_ID_PREFIX = "dataflow_get_stage_summary_errors";
+  private static final String JOB_METRICS = "job_metrics";
 
-  private static final String GET_STAGE_EXECUTION_ERRORS_TABLE_ID_PREFIX =
-      "dataflow_worker_details_errors";
+  private static final String JOB_METRICS_ERRORS = "job_metrics_request_errors";
+
+  private static final String JOBS = "jobs";
+
+  private static final String JOB_ERRORS = "jobs_request_errors";
+
+  private static final String STAGE_EXECUTION_DETAILS = "stage_execution_details";
+
+  private static final String STAGE_EXECUTION_DETAILS_REQUESTS_ERRORS = "stage_execution_details_requests_errors";
+
 
   public static PTransform<@NonNull PCollection<ConversionError<String>>, @NonNull WriteResult>
       writeFromJsonToJobEventsErrors(BigQueryWriteOptions options) {
@@ -82,48 +81,48 @@ public class BigQueryWrites {
 
   public static PTransform<
           @NonNull PCollection<StageSummaryWithAppendedDetails>, @NonNull WriteResult>
-  dataflowJobExecutionDetails(BigQueryWriteOptions options) {
+      dataflowJobExecutionDetails(BigQueryWriteOptions options) {
     return withPartitioning(
-            options, tableId(STAGES_SUMMARY_TABLE_ID_PREFIX), ENRICHED_TIME_PARTITIONING);
+        options, tableId(JOB_EXECUTION_DETAILS), ENRICHED_TIME_PARTITIONING);
   }
 
   public static PTransform<
           @NonNull PCollection<DataflowRequestError<GetJobExecutionDetailsRequest>>,
           @NonNull WriteResult>
-  dataflowGetJobExecutionDetailsErrors(BigQueryWriteOptions options) {
+      dataflowGetJobExecutionDetailsErrors(BigQueryWriteOptions options) {
     return writeDataflowRequestErrors(
-            options, tableId(GET_JOB_EXECUTION_DETAILS_ERRORS_TABLE_ID_PREFIX));
+        options, tableId(JOB_EXECUTION_DETAILS_ERRORS));
   }
 
   public static PTransform<
           @NonNull PCollection<JobMetricsWithAppendedDetails>, @NonNull WriteResult>
-  dataflowJobMetrics(BigQueryWriteOptions options) {
-    return withPartitioning(options, tableId(METRICS_TABLE_ID_PREFIX), ENRICHED_TIME_PARTITIONING);
+      dataflowJobMetrics(BigQueryWriteOptions options) {
+    return withPartitioning(options, tableId(JOB_METRICS), ENRICHED_TIME_PARTITIONING);
   }
 
   public static PTransform<
           @NonNull PCollection<DataflowRequestError<GetJobMetricsRequest>>, @NonNull WriteResult>
-  dataflowGetJobMetricsErrors(BigQueryWriteOptions options) {
-    return writeDataflowRequestErrors(options, tableId(GET_JOB_METRICS_TABLE_ID_PREFIX));
+      dataflowGetJobMetricsErrors(BigQueryWriteOptions options) {
+    return writeDataflowRequestErrors(options, tableId(JOB_METRICS_ERRORS));
   }
 
   public static PTransform<@NonNull PCollection<Job>, @NonNull WriteResult> dataflowJobs(
       BigQueryWriteOptions options) {
     return withPartitioningAndOptionalClustering(
-        options, tableId(JOB_TABLE_ID_PREFIX), JOB_TIME_PARTITIONING, JOB_CLUSTERING);
+        options, tableId(JOBS), JOB_TIME_PARTITIONING, JOB_CLUSTERING);
   }
 
   public static PTransform<
           @NonNull PCollection<DataflowRequestError<GetJobRequest>>, @NonNull WriteResult>
       dataflowGetJobsErrors(BigQueryWriteOptions options) {
-    return writeDataflowRequestErrors(options, tableId(GET_JOBS_ERRORS_TABLE_ID_PREFIX));
+    return writeDataflowRequestErrors(options, tableId(JOB_ERRORS));
   }
 
   public static PTransform<
           @NonNull PCollection<WorkerDetailsWithAppendedDetails>, @NonNull WriteResult>
       dataflowStageExecutionDetails(BigQueryWriteOptions options) {
     return withPartitioning(
-        options, tableId(WORKER_DETAILS_TABLE_ID_PREFIX), ENRICHED_TIME_PARTITIONING);
+        options, tableId(STAGE_EXECUTION_DETAILS), ENRICHED_TIME_PARTITIONING);
   }
 
   public static PTransform<
@@ -131,7 +130,7 @@ public class BigQueryWrites {
           @NonNull WriteResult>
       dataflowGetStageExecutionDetailsErrors(BigQueryWriteOptions options) {
     return writeDataflowRequestErrors(
-        options, tableId(GET_JOB_EXECUTION_DETAILS_ERRORS_TABLE_ID_PREFIX));
+        options, tableId(STAGE_EXECUTION_DETAILS_REQUESTS_ERRORS));
   }
 
   private static <RequestT>

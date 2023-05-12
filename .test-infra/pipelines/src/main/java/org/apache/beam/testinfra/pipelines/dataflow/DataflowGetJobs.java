@@ -23,13 +23,24 @@ import com.google.dataflow.v1beta3.GetJobRequest;
 import com.google.dataflow.v1beta3.Job;
 import com.google.dataflow.v1beta3.JobsV1Beta3Grpc;
 import io.grpc.StatusRuntimeException;
+import org.apache.beam.sdk.schemas.AutoValueSchema;
+import org.apache.beam.sdk.schemas.JavaBeanSchema;
+import org.apache.beam.sdk.schemas.JavaFieldSchema;
+import org.apache.beam.sdk.schemas.Schema;
+import org.apache.beam.sdk.schemas.SchemaRegistry;
+import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
+import org.apache.beam.sdk.schemas.utils.JavaBeanUtils;
+import org.apache.beam.sdk.schemas.utils.StaticSchemaInference;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
+import org.apache.beam.sdk.values.TypeDescriptor;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
@@ -38,7 +49,9 @@ public class DataflowGetJobs
         @NonNull PCollection<GetJobRequest>,
         @NonNull DataflowReadResult<Job, DataflowRequestError<GetJobRequest>>> {
 
-  private static final TupleTag<Job> SUCCESS = new TupleTag<Job>() {};
+  private static final DefaultSchema.DefaultSchemaProvider SCHEMA_PROVIDER = new DefaultSchema.DefaultSchemaProvider();
+
+  private static final TupleTag<Job> SUCCESS = new TupleTag<Job>(){};
 
   private static final TupleTag<DataflowRequestError<GetJobRequest>> FAILURE =
       new TupleTag<DataflowRequestError<GetJobRequest>>() {};
@@ -56,12 +69,16 @@ public class DataflowGetJobs
   @Override
   public @NonNull DataflowReadResult<Job, DataflowRequestError<GetJobRequest>> expand(
       PCollection<GetJobRequest> input) {
+
+    Schema successSchema = checkStateNotNull(SCHEMA_PROVIDER.schemaFor(TypeDescriptor.of(Job.class)));
+    Schema failureSchema = checkStateNotNull(SCHEMA_PROVIDER.schemaFor(new TypeDescriptor<DataflowRequestError<GetJobRequest>>(){}));
+
     PCollectionTuple pct =
         input.apply(
             "GetJobs",
             ParDo.of(new GetJobsFn(this)).withOutputTags(SUCCESS, TupleTagList.of(FAILURE)));
 
-    return DataflowReadResult.of(SUCCESS, FAILURE, pct);
+    return DataflowReadResult.of(SUCCESS, FAILURE, successSchema, failureSchema, pct);
   }
 
   private static class GetJobsFn extends DoFn<GetJobRequest, Job> {

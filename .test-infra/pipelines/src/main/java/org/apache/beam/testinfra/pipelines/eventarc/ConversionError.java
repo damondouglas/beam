@@ -21,14 +21,27 @@ import com.google.auto.value.AutoValue;
 import com.google.protobuf.Timestamp;
 import java.io.Serializable;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
+import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 import org.apache.beam.sdk.schemas.annotations.SchemaCaseFormat;
+import org.apache.beam.sdk.transforms.SerializableFunction;
+import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.CaseFormat;
+import org.checkerframework.checker.nullness.qual.NonNull;
+
+import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue
 @SchemaCaseFormat(CaseFormat.LOWER_CAMEL)
 public abstract class ConversionError<SourceT> implements Serializable {
+
+  private static final AutoValueSchema SCHEMA_PROVIDER = new AutoValueSchema();
+
+  public static <SourceT> @NonNull Schema getSchema() {
+    TypeDescriptor<ConversionError<SourceT>> type = new TypeDescriptor<ConversionError<SourceT>>() {};
+    return checkStateNotNull(SCHEMA_PROVIDER.schemaFor(type));
+  }
 
   public static <SourceT> Builder<SourceT> builder() {
     return new AutoValue_ConversionError.Builder<>();
