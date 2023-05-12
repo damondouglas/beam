@@ -35,7 +35,8 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class DataflowGetJobs
     extends PTransform<
-        @NonNull PCollection<GetJobRequest>, @NonNull DataflowReadResult<GetJobRequest, Job>> {
+        @NonNull PCollection<GetJobRequest>,
+        @NonNull DataflowReadResult<Job, DataflowRequestError<GetJobRequest>>> {
 
   private static final TupleTag<Job> SUCCESS = new TupleTag<Job>() {};
 
@@ -53,7 +54,8 @@ public class DataflowGetJobs
   }
 
   @Override
-  public @NonNull DataflowReadResult<GetJobRequest, Job> expand(PCollection<GetJobRequest> input) {
+  public @NonNull DataflowReadResult<Job, DataflowRequestError<GetJobRequest>> expand(
+      PCollection<GetJobRequest> input) {
     PCollectionTuple pct =
         input.apply(
             "GetJobs",

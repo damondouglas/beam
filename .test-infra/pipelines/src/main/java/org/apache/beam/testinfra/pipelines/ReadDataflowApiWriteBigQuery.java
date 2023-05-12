@@ -17,11 +17,23 @@
  */
 package org.apache.beam.testinfra.pipelines;
 
+import com.google.dataflow.v1beta3.GetJobRequest;
+import com.google.dataflow.v1beta3.Job;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.WithFailures;
+import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.testinfra.pipelines.bigquery.BigQueryWriteOptions;
+import org.apache.beam.testinfra.pipelines.dataflow.DataflowClientFactoryConfiguration;
+import org.apache.beam.testinfra.pipelines.dataflow.DataflowGetJobs;
 import org.apache.beam.testinfra.pipelines.dataflow.DataflowJobsOptions;
+import org.apache.beam.testinfra.pipelines.dataflow.DataflowReadResult;
+import org.apache.beam.testinfra.pipelines.dataflow.DataflowRequests;
+import org.apache.beam.testinfra.pipelines.eventarc.ConversionError;
+import org.apache.beam.testinfra.pipelines.eventarc.EventarcConversions;
 import org.apache.beam.testinfra.pipelines.pubsub.PubsubReadOptions;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class ReadDataflowApiWriteBigQuery {
   //  private static final Logger LOG = LoggerFactory.getLogger(ReadDataflowApiWriteBigQuery.class);
@@ -31,6 +43,26 @@ public class ReadDataflowApiWriteBigQuery {
   public static void main(String[] args) {
     Options options = PipelineOptionsFactory.fromArgs(args).withValidation().as(Options.class);
     Pipeline pipeline = Pipeline.create(options);
+
+    DataflowClientFactoryConfiguration configuration =
+        DataflowClientFactoryConfiguration.builder(options).build();
+
+    PCollection<String> json =
+        pipeline.apply(
+            "Read Eventarc Pubsub",
+            PubsubIO.readStrings()
+                .fromSubscription(options.getSubscription().getValue().getPath()));
+
+    WithFailures.Result<
+            @NonNull PCollection<com.google.events.cloud.dataflow.v1beta3.Job>,
+            ConversionError<String>>
+        events = json.apply(EventarcConversions.fromJson());
+
+    DataflowReadResult<GetJobRequest, Job> jobs =
+        events
+            .output()
+            .apply("GetDataflowJob requests", DataflowRequests.jobRequestsFromEventsViewAll())
+            .apply("GetDataflowJobs", DataflowGetJobs.create(configuration));
 
     pipeline.run();
   }

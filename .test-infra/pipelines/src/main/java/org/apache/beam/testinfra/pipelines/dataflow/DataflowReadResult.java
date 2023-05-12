@@ -31,12 +31,10 @@ import org.checkerframework.checker.initialization.qual.Initialized;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
 
-public class DataflowReadResult<RequestT, ResponseT> implements POutput {
+public class DataflowReadResult<ResponseT, FailureT> implements POutput {
 
-  public static <RequestT, ResponseT> DataflowReadResult<RequestT, ResponseT> of(
-      TupleTag<ResponseT> successTag,
-      TupleTag<DataflowRequestError<RequestT>> failureTag,
-      PCollectionTuple pct) {
+  public static <ResponseT, FailureT> DataflowReadResult<ResponseT, FailureT> of(
+      TupleTag<ResponseT> successTag, TupleTag<FailureT> failureTag, PCollectionTuple pct) {
     return new DataflowReadResult<>(successTag, failureTag, pct);
   }
 
@@ -46,14 +44,12 @@ public class DataflowReadResult<RequestT, ResponseT> implements POutput {
 
   private final PCollection<ResponseT> success;
 
-  private final TupleTag<DataflowRequestError<RequestT>> failureTag;
+  private final TupleTag<FailureT> failureTag;
 
-  private final PCollection<DataflowRequestError<RequestT>> failure;
+  private final PCollection<FailureT> failure;
 
   private DataflowReadResult(
-      TupleTag<ResponseT> successTag,
-      TupleTag<DataflowRequestError<RequestT>> failureTag,
-      PCollectionTuple pct) {
+      TupleTag<ResponseT> successTag, TupleTag<FailureT> failureTag, PCollectionTuple pct) {
     this.pipeline = pct.getPipeline();
     this.successTag = successTag;
     this.success = pct.get(successTag);
@@ -65,7 +61,7 @@ public class DataflowReadResult<RequestT, ResponseT> implements POutput {
     return success;
   }
 
-  public PCollection<DataflowRequestError<RequestT>> getFailure() {
+  public PCollection<FailureT> getFailure() {
     return failure;
   }
 

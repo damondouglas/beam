@@ -20,6 +20,7 @@ package org.apache.beam.testinfra.pipelines.dataflow;
 import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 
 import com.google.dataflow.v1beta3.GetJobMetricsRequest;
+import com.google.dataflow.v1beta3.Job;
 import com.google.dataflow.v1beta3.JobMetrics;
 import com.google.dataflow.v1beta3.MetricsV1Beta3Grpc;
 import io.grpc.StatusRuntimeException;
@@ -38,15 +39,16 @@ import org.joda.time.Instant;
 
 public class DataflowGetJobMetrics
     extends PTransform<
-        @NonNull PCollection<GetJobMetricsRequest>,
-        @NonNull DataflowReadResult<GetJobMetricsRequest, JobMetricsWithJobId>> {
+        @NonNull PCollection<Job>,
+        @NonNull DataflowReadResult<
+            JobMetricsWithAppendedDetails, DataflowRequestError<GetJobMetricsRequest>>> {
 
   public static DataflowGetJobMetrics create(DataflowClientFactoryConfiguration configuration) {
     return new DataflowGetJobMetrics(configuration);
   }
 
-  private static final TupleTag<JobMetricsWithJobId> SUCCESS =
-      new TupleTag<JobMetricsWithJobId>() {};
+  private static final TupleTag<JobMetricsWithAppendedDetails> SUCCESS =
+      new TupleTag<JobMetricsWithAppendedDetails>() {};
 
   private static final TupleTag<DataflowRequestError<GetJobMetricsRequest>> FAILURE =
       new TupleTag<DataflowRequestError<GetJobMetricsRequest>>() {};
@@ -58,8 +60,9 @@ public class DataflowGetJobMetrics
   }
 
   @Override
-  public @NonNull DataflowReadResult<GetJobMetricsRequest, JobMetricsWithJobId> expand(
-      PCollection<GetJobMetricsRequest> input) {
+  public @NonNull DataflowReadResult<
+          JobMetricsWithAppendedDetails, DataflowRequestError<GetJobMetricsRequest>>
+      expand(PCollection<Job> input) {
     PCollectionTuple pct =
         input.apply(
             DataflowGetJobMetrics.class.getSimpleName(),
@@ -68,7 +71,7 @@ public class DataflowGetJobMetrics
     return DataflowReadResult.of(SUCCESS, FAILURE, pct);
   }
 
-  private static class GetJobMetricsFn extends DoFn<GetJobMetricsRequest, JobMetricsWithJobId> {
+  private static class GetJobMetricsFn extends DoFn<Job, JobMetricsWithAppendedDetails> {
 
     private final DataflowGetJobMetrics spec;
     private transient MetricsV1Beta3Grpc.@MonotonicNonNull MetricsV1Beta3BlockingStub client;
@@ -83,14 +86,21 @@ public class DataflowGetJobMetrics
     }
 
     @ProcessElement
-    public void process(@Element GetJobMetricsRequest request, MultiOutputReceiver receiver) {
+    public void process(@Element Job job, MultiOutputReceiver receiver) {
+      GetJobMetricsRequest request =
+          GetJobMetricsRequest.newBuilder()
+              .setJobId(job.getId())
+              .setProjectId(job.getProjectId())
+              .setLocation(job.getLocation())
+              .build();
       try {
         JobMetrics response = checkStateNotNull(client).getJobMetrics(request);
         receiver
             .get(SUCCESS)
             .output(
-                JobMetricsWithJobId.builder()
+                JobMetricsWithAppendedDetails.builder()
                     .setJobId(request.getJobId())
+                    .setJobCreateTime(job.getCreateTime())
                     .setJobMetrics(response)
                     .build());
       } catch (StatusRuntimeException e) {

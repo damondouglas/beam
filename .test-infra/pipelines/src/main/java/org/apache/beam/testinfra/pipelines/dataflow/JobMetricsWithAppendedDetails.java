@@ -19,18 +19,24 @@ package org.apache.beam.testinfra.pipelines.dataflow;
 
 import com.google.auto.value.AutoValue;
 import com.google.dataflow.v1beta3.JobMetrics;
+import com.google.protobuf.Timestamp;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
+import org.apache.beam.sdk.schemas.annotations.SchemaCaseFormat;
+import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.CaseFormat;
 
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue
-public abstract class JobMetricsWithJobId {
+@SchemaCaseFormat(CaseFormat.LOWER_CAMEL)
+public abstract class JobMetricsWithAppendedDetails {
 
   public static Builder builder() {
-    return new AutoValue_JobMetricsWithJobId.Builder();
+    return new AutoValue_JobMetricsWithAppendedDetails.Builder();
   }
 
   public abstract String getJobId();
+
+  public abstract Timestamp getJobCreateTime();
 
   public abstract JobMetrics getJobMetrics();
 
@@ -39,8 +45,10 @@ public abstract class JobMetricsWithJobId {
 
     public abstract Builder setJobId(String value);
 
+    public abstract Builder setJobCreateTime(Timestamp value);
+
     public abstract Builder setJobMetrics(JobMetrics value);
 
-    public abstract JobMetricsWithJobId build();
+    public abstract JobMetricsWithAppendedDetails build();
   }
 }

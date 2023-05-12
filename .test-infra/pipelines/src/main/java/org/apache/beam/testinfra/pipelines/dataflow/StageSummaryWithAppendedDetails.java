@@ -18,29 +18,37 @@
 package org.apache.beam.testinfra.pipelines.dataflow;
 
 import com.google.auto.value.AutoValue;
-import com.google.dataflow.v1beta3.WorkerDetails;
+import com.google.dataflow.v1beta3.StageSummary;
+import com.google.protobuf.Timestamp;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
+import org.apache.beam.sdk.schemas.annotations.SchemaCaseFormat;
+import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.CaseFormat;
 
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue
-public abstract class WorkerDetailsWithJobId {
-
-  public static Builder builder() {
-    return new AutoValue_WorkerDetailsWithJobId.Builder();
-  }
+@SchemaCaseFormat(CaseFormat.LOWER_CAMEL)
+public abstract class StageSummaryWithAppendedDetails {
 
   public abstract String getJobId();
 
-  public abstract WorkerDetails getWorkerDetails();
+  public abstract Timestamp getJobCreateTime();
+
+  public abstract StageSummary getStageSummary();
+
+  public static Builder builder() {
+    return new AutoValue_StageSummaryWithAppendedDetails.Builder();
+  }
 
   @AutoValue.Builder
   public abstract static class Builder {
 
     public abstract Builder setJobId(String value);
 
-    public abstract Builder setWorkerDetails(WorkerDetails value);
+    public abstract Builder setJobCreateTime(Timestamp value);
 
-    public abstract WorkerDetailsWithJobId build();
+    public abstract Builder setStageSummary(StageSummary value);
+
+    public abstract StageSummaryWithAppendedDetails build();
   }
 }

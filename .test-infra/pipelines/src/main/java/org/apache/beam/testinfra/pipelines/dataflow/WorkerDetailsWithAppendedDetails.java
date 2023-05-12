@@ -15,41 +15,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.conversions;
+package org.apache.beam.testinfra.pipelines.dataflow;
 
 import com.google.auto.value.AutoValue;
-import java.io.Serializable;
+import com.google.dataflow.v1beta3.WorkerDetails;
+import com.google.protobuf.Timestamp;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
-import org.joda.time.Instant;
+import org.apache.beam.sdk.schemas.annotations.SchemaCaseFormat;
+import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.CaseFormat;
 
 @DefaultSchema(AutoValueSchema.class)
 @AutoValue
-public abstract class ConversionError<SourceT> implements Serializable {
+@SchemaCaseFormat(CaseFormat.LOWER_CAMEL)
+public abstract class WorkerDetailsWithAppendedDetails {
 
-  public static <SourceT> Builder<SourceT> builder() {
-    return new AutoValue_ConversionError.Builder<>();
+  public static Builder builder() {
+    return new AutoValue_WorkerDetailsWithAppendedDetails.Builder();
   }
 
-  public abstract Instant getObservationTime();
+  public abstract String getJobId();
 
-  public abstract SourceT getSource();
+  public abstract Timestamp getJobCreateTime();
 
-  public abstract String getMessage();
-
-  public abstract String getStackTrace();
+  public abstract WorkerDetails getWorkerDetails();
 
   @AutoValue.Builder
-  public abstract static class Builder<SourceT> {
+  public abstract static class Builder {
 
-    public abstract Builder<SourceT> setObservationTime(Instant newObservationTime);
+    public abstract Builder setJobId(String value);
 
-    public abstract Builder<SourceT> setSource(SourceT newSource);
+    public abstract Builder setJobCreateTime(Timestamp value);
 
-    public abstract Builder<SourceT> setMessage(String newMessage);
+    public abstract Builder setWorkerDetails(WorkerDetails value);
 
-    public abstract Builder<SourceT> setStackTrace(String newStackTrace);
-
-    public abstract ConversionError<SourceT> build();
+    public abstract WorkerDetailsWithAppendedDetails build();
   }
 }

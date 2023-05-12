@@ -20,6 +20,7 @@ package org.apache.beam.testinfra.pipelines.dataflow;
 import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 
 import com.google.dataflow.v1beta3.GetStageExecutionDetailsRequest;
+import com.google.dataflow.v1beta3.Job;
 import com.google.dataflow.v1beta3.MetricsV1Beta3Grpc;
 import com.google.dataflow.v1beta3.StageExecutionDetails;
 import com.google.dataflow.v1beta3.WorkerDetails;
@@ -40,16 +41,18 @@ import org.joda.time.Instant;
 
 public class DataflowGetStageExecutionDetails
     extends PTransform<
-        @NonNull PCollection<GetStageExecutionDetailsRequest>,
-        @NonNull DataflowReadResult<GetStageExecutionDetailsRequest, WorkerDetailsWithJobId>> {
+        @NonNull PCollection<Job>,
+        @NonNull DataflowReadResult<
+            WorkerDetailsWithAppendedDetails,
+            DataflowRequestError<GetStageExecutionDetailsRequest>>> {
 
   public static DataflowGetStageExecutionDetails create(
       DataflowClientFactoryConfiguration configuration) {
     return new DataflowGetStageExecutionDetails(configuration);
   }
 
-  private static final TupleTag<WorkerDetailsWithJobId> SUCCESS =
-      new TupleTag<WorkerDetailsWithJobId>() {};
+  private static final TupleTag<WorkerDetailsWithAppendedDetails> SUCCESS =
+      new TupleTag<WorkerDetailsWithAppendedDetails>() {};
 
   private static final TupleTag<DataflowRequestError<GetStageExecutionDetailsRequest>> FAILURE =
       new TupleTag<DataflowRequestError<GetStageExecutionDetailsRequest>>() {};
@@ -61,8 +64,9 @@ public class DataflowGetStageExecutionDetails
   }
 
   @Override
-  public @NonNull DataflowReadResult<GetStageExecutionDetailsRequest, WorkerDetailsWithJobId>
-      expand(PCollection<GetStageExecutionDetailsRequest> input) {
+  public @NonNull DataflowReadResult<
+          WorkerDetailsWithAppendedDetails, DataflowRequestError<GetStageExecutionDetailsRequest>>
+      expand(PCollection<Job> input) {
     PCollectionTuple pct =
         input.apply(
             DataflowGetStageExecutionDetails.class.getSimpleName(),
@@ -72,7 +76,7 @@ public class DataflowGetStageExecutionDetails
   }
 
   private static class GetStageExecutionDetailsFn
-      extends DoFn<GetStageExecutionDetailsRequest, WorkerDetailsWithJobId> {
+      extends DoFn<Job, WorkerDetailsWithAppendedDetails> {
     private final DataflowGetStageExecutionDetails spec;
     private transient MetricsV1Beta3Grpc.@MonotonicNonNull MetricsV1Beta3BlockingStub client;
 
@@ -86,17 +90,22 @@ public class DataflowGetStageExecutionDetails
     }
 
     @ProcessElement
-    public void process(
-        @Element GetStageExecutionDetailsRequest request, MultiOutputReceiver receiver) {
+    public void process(@Element Job job, MultiOutputReceiver receiver) {
+      GetStageExecutionDetailsRequest request =
+          GetStageExecutionDetailsRequest.newBuilder()
+              .setJobId(job.getId())
+              .setProjectId(job.getProjectId())
+              .setLocation(job.getLocation())
+              .build();
       try {
         StageExecutionDetails response =
             checkStateNotNull(client).getStageExecutionDetails(request);
-        emitResponse(request, response, receiver.get(SUCCESS));
+        emitResponse(job, response, receiver.get(SUCCESS));
         while (!Strings.isNullOrEmpty(response.getNextPageToken())) {
           GetStageExecutionDetailsRequest requestWithPageToken =
               request.toBuilder().setPageToken(response.getNextPageToken()).build();
           response = client.getStageExecutionDetails(requestWithPageToken);
-          emitResponse(request, response, receiver.get(SUCCESS));
+          emitResponse(job, response, receiver.get(SUCCESS));
         }
       } catch (StatusRuntimeException e) {
         receiver
@@ -112,13 +121,14 @@ public class DataflowGetStageExecutionDetails
     }
 
     private static void emitResponse(
-        @NonNull GetStageExecutionDetailsRequest request,
-        StageExecutionDetails response,
-        OutputReceiver<WorkerDetailsWithJobId> receiver) {
+        @NonNull Job job,
+        @NonNull StageExecutionDetails response,
+        @NonNull OutputReceiver<WorkerDetailsWithAppendedDetails> receiver) {
       for (WorkerDetails details : response.getWorkersList()) {
         receiver.output(
-            WorkerDetailsWithJobId.builder()
-                .setJobId(request.getJobId())
+            WorkerDetailsWithAppendedDetails.builder()
+                .setJobId(job.getId())
+                .setJobCreateTime(job.getCreateTime())
                 .setWorkerDetails(details)
                 .build());
       }

@@ -19,7 +19,6 @@ package org.apache.beam.testinfra.pipelines.dataflow;
 
 import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 
-import com.google.dataflow.v1beta3.GetJobExecutionDetailsRequest;
 import com.google.dataflow.v1beta3.GetJobRequest;
 import com.google.dataflow.v1beta3.JobView;
 import com.google.events.cloud.dataflow.v1beta3.Job;
@@ -42,19 +41,6 @@ public final class DataflowRequests {
                   .setLocation(safeEvent.getLocation())
                   .setProjectId(safeEvent.getProjectId())
                   .setView(view)
-                  .build();
-            });
-  }
-
-  public static MapElements<Job, GetJobExecutionDetailsRequest> jobExecutionDetailsRequests() {
-    return MapElements.into(TypeDescriptor.of(GetJobExecutionDetailsRequest.class))
-        .via(
-            event -> {
-              Job safeEvent = checkStateNotNull(event);
-              return GetJobExecutionDetailsRequest.newBuilder()
-                  .setJobId(safeEvent.getId())
-                  .setLocation(safeEvent.getLocation())
-                  .setProjectId(safeEvent.getProjectId())
                   .build();
             });
   }

@@ -20,6 +20,7 @@ package org.apache.beam.testinfra.pipelines.dataflow;
 import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 
 import com.google.dataflow.v1beta3.GetJobExecutionDetailsRequest;
+import com.google.dataflow.v1beta3.Job;
 import com.google.dataflow.v1beta3.JobExecutionDetails;
 import com.google.dataflow.v1beta3.MetricsV1Beta3Grpc;
 import com.google.dataflow.v1beta3.StageSummary;
@@ -40,11 +41,12 @@ import org.joda.time.Instant;
 
 public class DataflowGetJobExecutionDetails
     extends PTransform<
-        @NonNull PCollection<GetJobExecutionDetailsRequest>,
-        @NonNull DataflowReadResult<GetJobExecutionDetailsRequest, StageSummaryWithJobId>> {
+        @NonNull PCollection<Job>,
+        @NonNull DataflowReadResult<
+            StageSummaryWithAppendedDetails, DataflowRequestError<GetJobExecutionDetailsRequest>>> {
 
-  private static final TupleTag<StageSummaryWithJobId> SUCCESS =
-      new TupleTag<StageSummaryWithJobId>() {};
+  private static final TupleTag<StageSummaryWithAppendedDetails> SUCCESS =
+      new TupleTag<StageSummaryWithAppendedDetails>() {};
 
   private static final TupleTag<DataflowRequestError<GetJobExecutionDetailsRequest>> FAILURE =
       new TupleTag<DataflowRequestError<GetJobExecutionDetailsRequest>>() {};
@@ -61,8 +63,9 @@ public class DataflowGetJobExecutionDetails
   }
 
   @Override
-  public @NonNull DataflowReadResult<GetJobExecutionDetailsRequest, StageSummaryWithJobId> expand(
-      PCollection<GetJobExecutionDetailsRequest> input) {
+  public @NonNull DataflowReadResult<
+          StageSummaryWithAppendedDetails, DataflowRequestError<GetJobExecutionDetailsRequest>>
+      expand(PCollection<Job> input) {
     PCollectionTuple pct =
         input.apply(
             DataflowGetJobExecutionDetails.class.getSimpleName(),
@@ -71,8 +74,7 @@ public class DataflowGetJobExecutionDetails
     return DataflowReadResult.of(SUCCESS, FAILURE, pct);
   }
 
-  private static class GetJobExecutionDetailsFn
-      extends DoFn<GetJobExecutionDetailsRequest, StageSummaryWithJobId> {
+  private static class GetJobExecutionDetailsFn extends DoFn<Job, StageSummaryWithAppendedDetails> {
     private final DataflowGetJobExecutionDetails spec;
     private transient MetricsV1Beta3Grpc.@MonotonicNonNull MetricsV1Beta3BlockingStub client;
 
@@ -86,16 +88,21 @@ public class DataflowGetJobExecutionDetails
     }
 
     @ProcessElement
-    public void process(
-        @Element GetJobExecutionDetailsRequest request, MultiOutputReceiver receiver) {
+    public void process(@Element Job job, MultiOutputReceiver receiver) {
+      GetJobExecutionDetailsRequest request =
+          GetJobExecutionDetailsRequest.newBuilder()
+              .setJobId(job.getId())
+              .setProjectId(job.getProjectId())
+              .setLocation(job.getLocation())
+              .build();
       try {
         JobExecutionDetails response = checkStateNotNull(client).getJobExecutionDetails(request);
-        emitResponse(request, response, receiver.get(SUCCESS));
+        emitResponse(job, response, receiver.get(SUCCESS));
         while (!Strings.isNullOrEmpty(response.getNextPageToken())) {
           GetJobExecutionDetailsRequest requestWithPageToken =
               request.toBuilder().setPageToken(response.getNextPageToken()).build();
           response = client.getJobExecutionDetails(requestWithPageToken);
-          emitResponse(request, response, receiver.get(SUCCESS));
+          emitResponse(job, response, receiver.get(SUCCESS));
         }
       } catch (StatusRuntimeException e) {
         receiver
@@ -112,13 +119,14 @@ public class DataflowGetJobExecutionDetails
   }
 
   private static void emitResponse(
-      @NonNull GetJobExecutionDetailsRequest request,
+      @NonNull Job job,
       @NonNull JobExecutionDetails response,
-      DoFn.OutputReceiver<StageSummaryWithJobId> receiver) {
+      DoFn.OutputReceiver<StageSummaryWithAppendedDetails> receiver) {
     for (StageSummary summary : response.getStagesList()) {
       receiver.output(
-          StageSummaryWithJobId.builder()
-              .setJobId(request.getJobId())
+          StageSummaryWithAppendedDetails.builder()
+              .setJobId(job.getId())
+              .setJobCreateTime(job.getCreateTime())
               .setStageSummary(summary)
               .build());
     }
