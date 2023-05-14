@@ -20,6 +20,7 @@
   <suppress checks="JavadocPackage" files=".*[\\\/]src[\\\/]test[\\\/].*"/>
   <suppress checks="JavadocPackage" files=".*[\\\/]maven-archetypes[\\\/].*"/>
   <suppress checks="JavadocPackage" files=".*[\\\/]examples[\\\/].*"/>
+  <suppress checks="JavadocPackage" files=".*[\\\/].test-infra[\\\/]pipelines[\\\/].*"/>
   
   <suppress checks="JavadocMethod" files=".*Test\.java"/>
   <suppress checks="JavadocMethod" files=".*[\\\/]src[\\\/]test[\\\/].*"/>
@@ -69,6 +70,7 @@
   <suppress id="ForbidNonVendoredGrpcProtobuf" files=".*zetasql.*ZetaSQLPushDownTest\.java" />
   <suppress id="ForbidNonVendoredGrpcProtobuf" files=".*examples.*datatokenization.*BigTableIO\.java" />
   <suppress id="ForbidNonVendoredGrpcProtobuf" files=".*aws2.*kinesis.*RecordsAggregator\.java" />
+  <suppress id="ForbidNonVendoredGrpcProtobuf" files=".*testinfra.*pipelines.*" />
 
   <!-- Flink -->
   <!-- Checkstyle does not correctly detect package files across multiple source directories. -->

@@ -17,15 +17,17 @@
  */
 package org.apache.beam.testinfra.pipelines.eventarc;
 
-import static com.google.common.base.Preconditions.checkState;
 import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
+import static org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Preconditions.checkState;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.events.cloud.dataflow.v1beta3.Job;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Timestamp;
 import com.google.protobuf.util.JsonFormat;
+import java.time.Instant;
 import java.util.Optional;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.SerializableFunction;
@@ -47,6 +49,8 @@ public final class EventarcConversions {
         .exceptionsVia(
             exceptionElement ->
                 ConversionError.<String>builder()
+                    .setObservedTime(
+                        Timestamp.newBuilder().setSeconds(Instant.now().getEpochSecond()).build())
                     .setSource(exceptionElement.element())
                     .setMessage(
                         Optional.ofNullable(exceptionElement.exception().getMessage()).orElse(""))

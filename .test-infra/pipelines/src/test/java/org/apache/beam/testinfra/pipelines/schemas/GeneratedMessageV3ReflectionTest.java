@@ -18,56 +18,16 @@
 package org.apache.beam.testinfra.pipelines.schemas;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.dataflow.v1beta3.Job;
-import com.google.dataflow.v1beta3.JobType;
-import com.google.protobuf.BoolValue;
-import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor.JavaType;
-import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.stream.Collectors;
-
-import org.apache.beam.sdk.values.TypeDescriptor;
-import org.apache.beam.sdk.values.TypeDescriptors;
+import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableSet;
 import org.junit.jupiter.api.Test;
 
 class GeneratedMessageV3ReflectionTest {
-
-  @Test
-  void getName_BoolValue_isBoolValue() {
-    GeneratedMessageV3Reflection<BoolValue> reflection =
-        new GeneratedMessageV3Reflection<>(BoolValue.class);
-    assertEquals("BoolValue", reflection.getName());
-  }
-
-  @Test
-  void getFullName_BoolValue_isGoogleProtobufBoolValue() {
-    GeneratedMessageV3Reflection<BoolValue> reflection =
-        new GeneratedMessageV3Reflection<>(BoolValue.class);
-    assertEquals("google.protobuf.BoolValue", reflection.getFullName());
-  }
-
-  @Test
-  void getDescriptorForType_BoolValue_isNotNull() {
-    GeneratedMessageV3Reflection<BoolValue> reflection =
-        new GeneratedMessageV3Reflection<>(BoolValue.class);
-    Descriptor descriptor = reflection.getDescriptorForType();
-    assertNotNull(descriptor);
-  }
-
-  @Test
-  void getDescriptorForTypeMethod_BoolValue_isNotNull() {
-    GeneratedMessageV3Reflection<BoolValue> reflection =
-        new GeneratedMessageV3Reflection<>(BoolValue.class);
-    Method method = reflection.getDescriptorForTypeMethod();
-    assertNotNull(method);
-  }
 
   @Test
   void getNonRepeatedFieldsForType_Job() {
@@ -159,8 +119,9 @@ class GeneratedMessageV3ReflectionTest {
   void hasOptionalKeyword_Job_isEmpty() {
     GeneratedMessageV3Reflection<Job> reflection = new GeneratedMessageV3Reflection<>(Job.class);
     assertTrue(
-            reflection.getFields().stream().filter(FieldDescriptor::hasOptionalKeyword)
-                    .collect(Collectors.toSet()).isEmpty()
-    );
+        reflection.getFields().stream()
+            .filter(FieldDescriptor::hasOptionalKeyword)
+            .collect(Collectors.toSet())
+            .isEmpty());
   }
 }

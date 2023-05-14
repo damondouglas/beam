@@ -17,66 +17,45 @@
  */
 package org.apache.beam.testinfra.pipelines.schemas;
 
+import static org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Preconditions.checkState;
+
 import com.google.protobuf.GeneratedMessageV3;
-import org.apache.beam.sdk.schemas.FieldValueGetter;
-import org.apache.beam.sdk.schemas.FieldValueTypeInformation;
-import org.apache.beam.sdk.schemas.GetterBasedSchemaProvider;
 import org.apache.beam.sdk.schemas.Schema;
-import org.apache.beam.sdk.schemas.SchemaUserTypeCreator;
+import org.apache.beam.sdk.schemas.SchemaProvider;
+import org.apache.beam.sdk.transforms.SerializableFunction;
+import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.checkerframework.checker.initialization.qual.Initialized;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
 
-import java.util.List;
+public class GeneratedMessageV3Schema implements SchemaProvider {
 
-import static com.google.common.base.Preconditions.checkArgument;
+  @Override
+  public @Nullable @UnknownKeyFor @Initialized <T> Schema schemaFor(
+      @UnknownKeyFor @NonNull @Initialized TypeDescriptor<T> typeDescriptor) {
+    checkState(GeneratedMessageV3.class.isAssignableFrom(typeDescriptor.getRawType()));
+    GeneratedMessageV3Reflection<GeneratedMessageV3> reflection =
+        new GeneratedMessageV3Reflection<>((Class<GeneratedMessageV3>) typeDescriptor.getRawType());
+    GeneratedMessageV3SchemaBuilder<?> builder =
+        new GeneratedMessageV3SchemaBuilder<>(Schema.builder(), reflection);
+    return builder.build();
+  }
 
-public class GeneratedMessageV3Schema {
-//public class GeneratedMessageV3Schema extends GetterBasedSchemaProvider {
-//
-//    @Override
-//    public @UnknownKeyFor
-//    @NonNull
-//    @Initialized List<
-//                @UnknownKeyFor @NonNull @Initialized FieldValueGetter>
-//        fieldValueGetters(
-//            @UnknownKeyFor @NonNull @Initialized
-//                Class<@UnknownKeyFor @NonNull @Initialized ?> targetClass,
-//            @UnknownKeyFor @NonNull @Initialized Schema schema) {
-//
-//      TypeDescriptor<?> type = TypeDescriptor.of(targetClass);
-//      checkArgument(
-//          type.isSubtypeOf(TypeDescriptor.of(GeneratedMessageV3.class)),
-//          "%s is not a subtype of %s",
-//          targetClass,
-//          GeneratedMessageV3.class);
-//
-//      return null;
-//    }
-//
-//    @Override
-//    public @UnknownKeyFor @NonNull @Initialized List<
-//            @UnknownKeyFor @NonNull @Initialized FieldValueTypeInformation>
-//        fieldValueTypeInformations(
-//            @UnknownKeyFor @NonNull @Initialized
-//                Class<@UnknownKeyFor @NonNull @Initialized ?> targetClass,
-//            @UnknownKeyFor @NonNull @Initialized Schema schema) {
-//      return null;
-//    }
-//
-//    @Override
-//    public @UnknownKeyFor @NonNull @Initialized SchemaUserTypeCreator schemaTypeCreator(
-//        @UnknownKeyFor @NonNull @Initialized
-//            Class<@UnknownKeyFor @NonNull @Initialized ?> targetClass,
-//        @UnknownKeyFor @NonNull @Initialized Schema schema) {
-//      return null;
-//    }
-//
-//    @Override
-//    public @Nullable @UnknownKeyFor @Initialized <T> Schema schemaFor(
-//        @UnknownKeyFor @NonNull @Initialized TypeDescriptor<T> typeDescriptor) {
-//      return null;
-//    }
+  @Override
+  public @Nullable @UnknownKeyFor @Initialized <T>
+      SerializableFunction<T, @UnknownKeyFor @NonNull @Initialized Row> toRowFunction(
+          @UnknownKeyFor @NonNull @Initialized TypeDescriptor<T> typeDescriptor) {
+    checkState(GeneratedMessageV3.class.isAssignableFrom(typeDescriptor.getRawType()));
+    return null;
+  }
+
+  @Override
+  public @Nullable @UnknownKeyFor @Initialized <T>
+      SerializableFunction<@UnknownKeyFor @NonNull @Initialized Row, T> fromRowFunction(
+          @UnknownKeyFor @NonNull @Initialized TypeDescriptor<T> typeDescriptor) {
+    checkState(GeneratedMessageV3.class.isAssignableFrom(typeDescriptor.getRawType()));
+    return null;
+  }
 }
