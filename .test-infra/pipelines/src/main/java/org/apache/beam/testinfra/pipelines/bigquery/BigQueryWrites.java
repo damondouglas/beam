@@ -39,6 +39,7 @@ import org.apache.beam.testinfra.pipelines.eventarc.ConversionError;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.collect.ImmutableList;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.joda.time.Duration;
 
 public class BigQueryWrites {
 
@@ -70,8 +71,8 @@ public class BigQueryWrites {
 
   private static final String STAGE_EXECUTION_DETAILS = "stage_execution_details";
 
-  private static final String STAGE_EXECUTION_DETAILS_REQUESTS_ERRORS = "stage_execution_details_requests_errors";
-
+  private static final String STAGE_EXECUTION_DETAILS_REQUESTS_ERRORS =
+      "stage_execution_details_requests_errors";
 
   public static PTransform<@NonNull PCollection<ConversionError<String>>, @NonNull WriteResult>
       writeFromJsonToJobEventsErrors(BigQueryWriteOptions options) {
@@ -82,16 +83,14 @@ public class BigQueryWrites {
   public static PTransform<
           @NonNull PCollection<StageSummaryWithAppendedDetails>, @NonNull WriteResult>
       dataflowJobExecutionDetails(BigQueryWriteOptions options) {
-    return withPartitioning(
-        options, tableId(JOB_EXECUTION_DETAILS), ENRICHED_TIME_PARTITIONING);
+    return withPartitioning(options, tableId(JOB_EXECUTION_DETAILS), ENRICHED_TIME_PARTITIONING);
   }
 
   public static PTransform<
           @NonNull PCollection<DataflowRequestError<GetJobExecutionDetailsRequest>>,
           @NonNull WriteResult>
       dataflowGetJobExecutionDetailsErrors(BigQueryWriteOptions options) {
-    return writeDataflowRequestErrors(
-        options, tableId(JOB_EXECUTION_DETAILS_ERRORS));
+    return writeDataflowRequestErrors(options, tableId(JOB_EXECUTION_DETAILS_ERRORS));
   }
 
   public static PTransform<
@@ -121,16 +120,14 @@ public class BigQueryWrites {
   public static PTransform<
           @NonNull PCollection<WorkerDetailsWithAppendedDetails>, @NonNull WriteResult>
       dataflowStageExecutionDetails(BigQueryWriteOptions options) {
-    return withPartitioning(
-        options, tableId(STAGE_EXECUTION_DETAILS), ENRICHED_TIME_PARTITIONING);
+    return withPartitioning(options, tableId(STAGE_EXECUTION_DETAILS), ENRICHED_TIME_PARTITIONING);
   }
 
   public static PTransform<
           @NonNull PCollection<DataflowRequestError<GetStageExecutionDetailsRequest>>,
           @NonNull WriteResult>
       dataflowGetStageExecutionDetailsErrors(BigQueryWriteOptions options) {
-    return writeDataflowRequestErrors(
-        options, tableId(STAGE_EXECUTION_DETAILS_REQUESTS_ERRORS));
+    return writeDataflowRequestErrors(options, tableId(STAGE_EXECUTION_DETAILS_REQUESTS_ERRORS));
   }
 
   private static <RequestT>
@@ -166,11 +163,12 @@ public class BigQueryWrites {
     BigQueryIO.Write<T> write =
         BigQueryIO.<T>write()
             .to(tableReference)
-            .withTimePartitioning(timePartitioning)
             .useBeamSchema()
+            .withTimePartitioning(timePartitioning)
             .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
             .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
-            .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS);
+            .withMethod(BigQueryIO.Write.Method.STORAGE_WRITE_API)
+            .withTriggeringFrequency(Duration.standardSeconds(3L));
 
     if (clustering != null) {
       write = write.withClustering(clustering);

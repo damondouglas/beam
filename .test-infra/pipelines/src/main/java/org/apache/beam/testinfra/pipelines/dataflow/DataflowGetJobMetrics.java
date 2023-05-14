@@ -25,9 +25,6 @@ import com.google.dataflow.v1beta3.JobMetrics;
 import com.google.dataflow.v1beta3.MetricsV1Beta3Grpc;
 import io.grpc.StatusRuntimeException;
 import java.util.Optional;
-
-import org.apache.beam.sdk.schemas.AutoValueSchema;
-import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
@@ -35,7 +32,6 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
-import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Throwables;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -68,16 +64,12 @@ public class DataflowGetJobMetrics
           JobMetricsWithAppendedDetails, DataflowRequestError<GetJobMetricsRequest>>
       expand(PCollection<Job> input) {
 
-    AutoValueSchema schemaProvider = new AutoValueSchema();
-    Schema successSchema = checkStateNotNull(schemaProvider.schemaFor(TypeDescriptor.of(JobMetricsWithAppendedDetails.class)));
-    Schema failureSchema = checkStateNotNull(schemaProvider.schemaFor(new TypeDescriptor<DataflowRequestError<GetJobMetricsRequest>>(){}));
-
     PCollectionTuple pct =
         input.apply(
             DataflowGetJobMetrics.class.getSimpleName(),
             ParDo.of(new GetJobMetricsFn(this)).withOutputTags(SUCCESS, TupleTagList.of(FAILURE)));
 
-    return DataflowReadResult.of(SUCCESS, FAILURE, successSchema, failureSchema, pct);
+    return DataflowReadResult.of(SUCCESS, FAILURE, pct);
   }
 
   private static class GetJobMetricsFn extends DoFn<Job, JobMetricsWithAppendedDetails> {

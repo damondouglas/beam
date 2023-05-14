@@ -25,11 +25,8 @@ import com.google.dataflow.v1beta3.Job;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.schemas.AutoValueSchema;
-import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.testinfra.pipelines.bigquery.BigQueryWriteOptions;
 import org.apache.beam.testinfra.pipelines.bigquery.BigQueryWrites;
 import org.apache.beam.testinfra.pipelines.dataflow.DataflowClientFactoryConfiguration;
@@ -48,8 +45,6 @@ import org.apache.beam.testinfra.pipelines.eventarc.ConversionError;
 import org.apache.beam.testinfra.pipelines.eventarc.EventarcConversions;
 import org.apache.beam.testinfra.pipelines.pubsub.PubsubReadOptions;
 import org.checkerframework.checker.nullness.qual.NonNull;
-
-import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 
 public class ReadDataflowApiWriteBigQuery {
 
@@ -106,7 +101,7 @@ public class ReadDataflowApiWriteBigQuery {
                     DataflowGetStageExecutionDetails.create(configuration));
 
     // Write results to BigQuery
-    getJobsResult.getSuccess().apply("Write Jobs", BigQueryWrites.dataflowJobs(options));
+    //    getJobsResult.getSuccess().apply("Write Jobs", BigQueryWrites.dataflowJobs(options));
     getJobsMetricsResult
         .getSuccess()
         .apply("Write JobMetrics", BigQueryWrites.dataflowJobMetrics(options));
@@ -121,7 +116,7 @@ public class ReadDataflowApiWriteBigQuery {
     // Write errors to BigQuery
     events
         .failures()
-            .setRowSchema(ConversionError.getSchema())
+        .setRowSchema(ConversionError.getSchema())
         .apply("Write Conversion Errors", BigQueryWrites.writeFromJsonToJobEventsErrors(options));
     getJobsResult
         .getFailure()

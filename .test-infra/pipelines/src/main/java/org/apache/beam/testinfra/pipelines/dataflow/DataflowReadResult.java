@@ -19,7 +19,6 @@ package org.apache.beam.testinfra.pipelines.dataflow;
 
 import java.util.Map;
 import org.apache.beam.sdk.Pipeline;
-import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
@@ -35,8 +34,8 @@ import org.checkerframework.checker.nullness.qual.UnknownKeyFor;
 public class DataflowReadResult<ResponseT, FailureT> implements POutput {
 
   public static <ResponseT, FailureT> DataflowReadResult<ResponseT, FailureT> of(
-      TupleTag<ResponseT> successTag, TupleTag<FailureT> failureTag, Schema successSchema, Schema failureSchema, PCollectionTuple pct) {
-    return new DataflowReadResult<>(successTag, failureTag, successSchema, failureSchema, pct);
+      TupleTag<ResponseT> successTag, TupleTag<FailureT> failureTag, PCollectionTuple pct) {
+    return new DataflowReadResult<>(successTag, failureTag, pct);
   }
 
   private final Pipeline pipeline;
@@ -50,12 +49,12 @@ public class DataflowReadResult<ResponseT, FailureT> implements POutput {
   private final PCollection<FailureT> failure;
 
   private DataflowReadResult(
-          TupleTag<ResponseT> successTag, TupleTag<FailureT> failureTag, Schema successSchema, Schema failureSchema, PCollectionTuple pct) {
+      TupleTag<ResponseT> successTag, TupleTag<FailureT> failureTag, PCollectionTuple pct) {
     this.pipeline = pct.getPipeline();
     this.successTag = successTag;
-    this.success = pct.get(successTag).setRowSchema(successSchema);
+    this.success = pct.get(successTag);
     this.failureTag = failureTag;
-    this.failure = pct.get(failureTag).setRowSchema(failureSchema);
+    this.failure = pct.get(failureTag);
   }
 
   public PCollection<ResponseT> getSuccess() {

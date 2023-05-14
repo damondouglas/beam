@@ -27,6 +27,7 @@ dependencies {
     implementation 'com.google.api.grpc:grpc-google-cloud-dataflow-v1beta3'
     implementation project(":sdks:java:io:google-cloud-platform")
     implementation project(":sdks:java:extensions:google-cloud-platform-core")
+    implementation project(":sdks:java:extensions:protobuf")
     implementation project(path: ":sdks:java:core", configuration: "shadow")
     runtimeOnly project(":runners:google-cloud-dataflow-java")
     runtimeOnly project(path: ":runners:direct-java", configuration: "shadow")

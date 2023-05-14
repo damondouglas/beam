@@ -26,9 +26,6 @@ import com.google.dataflow.v1beta3.StageExecutionDetails;
 import com.google.dataflow.v1beta3.WorkerDetails;
 import io.grpc.StatusRuntimeException;
 import java.util.Optional;
-
-import org.apache.beam.sdk.schemas.AutoValueSchema;
-import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
@@ -36,7 +33,6 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
-import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.vendor.grpc.v1p54p0.com.google.common.base.Throwables;
 import org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Strings;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
@@ -72,16 +68,12 @@ public class DataflowGetStageExecutionDetails
           WorkerDetailsWithAppendedDetails, DataflowRequestError<GetStageExecutionDetailsRequest>>
       expand(PCollection<Job> input) {
 
-    AutoValueSchema schemaProvider = new AutoValueSchema();
-    Schema successSchema = checkStateNotNull(schemaProvider.schemaFor(TypeDescriptor.of(WorkerDetailsWithAppendedDetails.class)));
-    Schema failureSchema = checkStateNotNull(schemaProvider.schemaFor(new TypeDescriptor<DataflowRequestError<GetStageExecutionDetailsRequest>>(){}));
-
     PCollectionTuple pct =
         input.apply(
             DataflowGetStageExecutionDetails.class.getSimpleName(),
             ParDo.of(new GetStageExecutionDetailsFn(this))
                 .withOutputTags(SUCCESS, TupleTagList.of(FAILURE)));
-    return DataflowReadResult.of(SUCCESS, FAILURE, successSchema, failureSchema, pct);
+    return DataflowReadResult.of(SUCCESS, FAILURE, pct);
   }
 
   private static class GetStageExecutionDetailsFn
