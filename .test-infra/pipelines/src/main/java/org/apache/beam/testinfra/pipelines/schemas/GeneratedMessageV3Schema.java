@@ -20,6 +20,7 @@ package org.apache.beam.testinfra.pipelines.schemas;
 import static org.apache.beam.vendor.guava.v26_0_jre.com.google.common.base.Preconditions.checkState;
 
 import com.google.protobuf.GeneratedMessageV3;
+import org.apache.beam.repackaged.core.org.apache.commons.lang3.NotImplementedException;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.schemas.SchemaProvider;
 import org.apache.beam.sdk.transforms.SerializableFunction;
@@ -56,6 +57,6 @@ public class GeneratedMessageV3Schema implements SchemaProvider {
       SerializableFunction<@UnknownKeyFor @NonNull @Initialized Row, T> fromRowFunction(
           @UnknownKeyFor @NonNull @Initialized TypeDescriptor<T> typeDescriptor) {
     checkState(GeneratedMessageV3.class.isAssignableFrom(typeDescriptor.getRawType()));
-    return null;
+    throw new NotImplementedException("this feature is not needed for this pipeline");
   }
 }

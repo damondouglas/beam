@@ -66,11 +66,6 @@ class GeneratedMessageV3Reflection<T extends GeneratedMessageV3> {
   }
 
   @NonNull
-  FieldDescriptor getField(String name) {
-    return checkStateNotNull(getFieldDescriptorMap().get(name));
-  }
-
-  @NonNull
   Collection<FieldDescriptor> getFields() {
     return getFieldDescriptorMap().values();
   }
@@ -108,16 +103,6 @@ class GeneratedMessageV3Reflection<T extends GeneratedMessageV3> {
   @NonNull
   List<FieldDescriptor> getNonRepeatedMapTypes() {
     return FieldDescriptorFilter.of(getFields()).maps().getFields();
-  }
-
-  @NonNull
-  String getName() {
-    return getDescriptorForType().getName();
-  }
-
-  @NonNull
-  String getFullName() {
-    return getDescriptorForType().getFullName();
   }
 
   @NonNull
