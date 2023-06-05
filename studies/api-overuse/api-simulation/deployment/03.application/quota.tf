@@ -58,7 +58,6 @@ resource "kubernetes_service" "quota" {
     selector = {
       app = var.quota_service.name
     }
-    type = "NodePort"
     port {
       port        = tostring(var.quota_service.port)
       target_port = tostring(var.quota_service.port)

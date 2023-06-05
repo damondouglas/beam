@@ -56,7 +56,6 @@ resource "kubernetes_service" "echo" {
     selector = {
       app = var.echo_service.name
     }
-    type = "NodePort"
     port {
       port        = tostring(var.echo_service.port)
       target_port = tostring(var.echo_service.port)
