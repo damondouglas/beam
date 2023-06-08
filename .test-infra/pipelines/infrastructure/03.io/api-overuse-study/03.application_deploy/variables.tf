@@ -1,0 +1,59 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+variable "namespace" {
+  type        = string
+  description = "The Kubernetes namespace"
+}
+
+variable "redis_service_name" {
+  type        = string
+  description = "The name of the Kubernetes service exposing redis"
+}
+
+variable "image_tag" {
+  type        = string
+  description = "The image tag to reference for the container images"
+  default     = "latest"
+}
+
+variable "image_repository" {
+  type        = string
+  description = "The image repository to reference for the container images"
+}
+
+variable "echo_service" {
+  type = object({
+    name     = string
+    image_id = string
+    port     = number
+  })
+
+  description = "Echo service configuration"
+}
+
+variable "quota_service" {
+  type = object({
+    name               = string
+    image_id           = string
+    port               = number
+    refresher_image_id = string
+  })
+
+  description = "Quota service configuration"
+}
