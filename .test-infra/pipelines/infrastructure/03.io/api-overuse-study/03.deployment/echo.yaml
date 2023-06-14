@@ -39,7 +39,7 @@ spec:
     spec:
       containers:
       - name: echo
-        image: ko.local/echo:latest
+        image: ko://github.com/apache/beam/test-infra/pipelines/src/main/go/cmd/api_overuse_study/echo
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

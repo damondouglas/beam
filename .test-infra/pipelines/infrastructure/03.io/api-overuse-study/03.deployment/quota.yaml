@@ -21,7 +21,8 @@ metadata:
 data:
   PORT: "8080"
   CACHE_HOST: "redis-master:6379"
-  REFRESHER_IMAGE: "ko.local/refresher:latest"
+  # TODO refactor using kustomize
+  REFRESHER_IMAGE: "us-central1-docker.pkg.dev/project/infra-pipelines/github.com/apache/beam/test-infra/pipelines/src/main/go/cmd/api_overuse_study/refresher:latest"
   NAMESPACE: "api-overuse-study"
   LOG_LEVEL: "debug"
 ---
@@ -42,7 +43,7 @@ spec:
       serviceAccountName: api-overuse-study
       containers:
       - name: quota
-        image: ko.local/quota:latest
+        image: ko://github.com/apache/beam/test-infra/pipelines/src/main/go/cmd/api_overuse_study/quota
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

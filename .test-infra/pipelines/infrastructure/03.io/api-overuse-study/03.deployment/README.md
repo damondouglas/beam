@@ -24,31 +24,40 @@ call as part of the overuse study.
 
 # Usage
 
-This directory depends on [ko.build](https://ko.build/) assumes the
+This directory depends on [ko.build](https://ko.build/) and assumes the
 working directory is at
 [.test-infra/pipelines](../../../..).
-
-## Local Deployment
-
-To deploy on a local kubernetes cluster, such as minikube:
 
 NOTE: If you are using minikube, remember to run the following command first:
 
 ```sh
-eval $(minikube -p minikube docker-env)
+minikube addons enable gcp-auth
 ```
+
+1. Set `KO_DOCKER_REPO`
+
+[.test-infra/pipelines/infrastructure/01.setup](../../../01.setup) provisioned
+a
+[Artifact Registry repository](https://cloud.google.com/artifact-registry/docs/repositories),
+[ko.build](https://ko.build) will automatically save the built images to the
+repository if you set the `KO_DOCKER_REPO` environment variable correctly:
+
+```
+export KO_DOCKER_REPO=<region>-docker.pkg.dev/<project>/infra-pipelines
+```
+
+where `<region>` is the value set in
+[.test-infra/pipelines/infrastructure/01.setup/common.tfvars](../../../01.setup/common.tfvars).
+if you setup using
+[.test-infra/pipelines/infrastructure/01.setup](../../../01.setup).
 
 1. Build the
    [.test-infra/pipelines/src/main/go/cmd/api_overuse_study/refresher](../../../../src/main/go/cmd/api_overuse_study/refresher)
-   image, making sure to use the `-L`, `-B`, and `-P` flags.
+   image, making sure to use the `-B`, and `-P` flags.
     ```
-    ko build -B -L -P ./src/main/go/cmd/api_overuse_study/refresher
+    ko build -B -P ./src/main/go/cmd/api_overuse_study/refresher
     ```
-2. Deploy using ko, again making sure to use the `-L`, `-B`, and `-P` flags.
+2. Deploy using ko, again making sure to use the `-B`, and `-P` flags.
     ```
-    ko apply -B -L -P -f infrastructure/03.io/api-overuse-study/03.deployment
+    ko apply -B -P -f infrastructure/03.io/api-overuse-study/03.deployment
     ```
-
-## Remote Deployment
-
-To be written in a future PR.
