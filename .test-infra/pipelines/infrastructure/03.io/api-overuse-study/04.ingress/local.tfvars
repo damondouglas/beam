@@ -16,37 +16,5 @@
  * limitations under the License.
  */
 
-variable "namespace" {
-  type        = string
-  description = "The Kubernetes namespace"
-}
-
-variable "echo_service" {
-  type = object({
-    name        = string
-    port        = number
-    target_port = number
-  })
-
-  description = "Echo service configuration"
-}
-
-variable "quota_service" {
-  type = object({
-    name        = string
-    port        = number
-    target_port = number
-  })
-
-  description = "Quota service configuration"
-}
-
-variable "annotations" {
-  type        = map(string)
-  description = "Annotations to apply to the services"
-}
-
-variable "service_type" {
-  type        = string
-  description = "The type of service i.e. LoadBalancer, etc"
-}
+annotations  = {}
+service_type = "LoadBalancer"

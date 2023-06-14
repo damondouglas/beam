@@ -24,6 +24,8 @@ import (
 	"github.com/apache/beam/test-infra/pipelines/src/main/go/internal/logging"
 	echov1 "github.com/apache/beam/test-infra/pipelines/src/main/go/internal/proto/echo/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // RegisterService to a grpcServer.
@@ -33,7 +35,7 @@ func RegisterService(ctx context.Context, server *grpc.Server, quotaCache cache.
 	}
 
 	svc := &echoService{
-		logger: logging.NewFromEnvironment(
+		logger: logging.New(
 			ctx,
 			"github.com/apache/beam/.test-infra/pipelines/src/main/go/internal/echo",
 			logging.LevelVariable),
@@ -56,8 +58,14 @@ type echoService struct {
 // if quota exceeded.
 func (e *echoService) Echo(ctx context.Context, request *echov1.EchoRequest) (*echov1.EchoResponse, error) {
 	e.logger.Debug(ctx, "received request", logging.Any("request", request))
+	if request == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "received nil request")
+	}
+	if request.Id == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid request: Id is required but empty")
+	}
 	if err := e.quotaCache.Decrement(ctx, request.Id); err != nil {
-		return nil, err
+		return nil, status.Error(codes.ResourceExhausted, err.Error())
 	}
 	return &echov1.EchoResponse{
 		Id:      request.Id,

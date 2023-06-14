@@ -62,17 +62,11 @@ type Logger struct {
 // Field represents a structured log entry field.
 type Field zap.Field
 
-// New instantiates a Logger with a default InfoLevel severity,
-// assigning the name; context is currently a placeholder and not used.
-func New(ctx context.Context, name string) *Logger {
-	return newWithLevel(ctx, name, InfoLevel)
-}
-
-// NewFromEnvironment instantiates a Logger, assigning the name where its
+// New instantiates a Logger, assigning the name where its
 // Level is derived from the LevelVariable; context is currently a placeholder
 // and not used. Panics if the level is missing or is not one of
 // AllowedLevelVariableValues.
-func NewFromEnvironment(ctx context.Context, name string, level environment.Variable) *Logger {
+func New(ctx context.Context, name string, level environment.Variable) *Logger {
 	if level.Missing() {
 		panic(fmt.Errorf("environment variable: %s is empty but required", level.Key()))
 	}
@@ -120,11 +114,6 @@ func Uint64(key string, value uint64) Field {
 	return (Field)(zap.Uint64(key, value))
 }
 
-// Int64 returns a key=value int64 Field.
-func Int64(key string, value int64) Field {
-	return (Field)(zap.Int64(key, value))
-}
-
 func zapFields(field []Field) []zap.Field {
 	var result []zap.Field
 	for _, k := range field {
@@ -139,8 +128,8 @@ func (logger *Logger) Debug(_ context.Context, message string, fields ...Field) 
 }
 
 // Error emits entries with a error severity log level.
-func (logger *Logger) Error(_ context.Context, message string, fields ...Field) {
-	logger.inner.Error(message, zapFields(fields)...)
+func (logger *Logger) Error(_ context.Context, err error, fields ...Field) {
+	logger.inner.Error(err.Error(), zapFields(fields)...)
 }
 
 // Info emits entries with a info severity log level.
@@ -149,8 +138,8 @@ func (logger *Logger) Info(_ context.Context, message string, fields ...Field) {
 }
 
 // Fatal emits entries with a fatal severity log level.
-func (logger *Logger) Fatal(_ context.Context, message string, fields ...Field) {
-	logger.inner.Fatal(message, zapFields(fields)...)
+func (logger *Logger) Fatal(_ context.Context, err error, fields ...Field) {
+	logger.inner.Fatal(err.Error(), zapFields(fields)...)
 }
 
 func (logger *Logger) WithLevel(level Level) *Logger {

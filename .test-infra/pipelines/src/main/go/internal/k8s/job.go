@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8s "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -64,8 +65,8 @@ func (js *Jobs) init(ctx context.Context, name string) (*batchv1.Job, error) {
 	}, nil
 }
 
-// Start a Kubernetes Job, configured with a Spec.
-func (js *Jobs) Start(ctx context.Context, spec *Spec) (*batchv1.Job, error) {
+// Create a Kubernetes Job, configured with a Spec.
+func (js *Jobs) Create(ctx context.Context, spec *Spec) (*batchv1.Job, error) {
 	job, err := js.init(ctx, spec.Name)
 	if err != nil {
 		return nil, err
@@ -108,4 +109,51 @@ func (js *Jobs) Start(ctx context.Context, spec *Spec) (*batchv1.Job, error) {
 	}
 
 	return job, nil
+}
+
+func (js *Jobs) Delete(ctx context.Context, name string) error {
+	job, err := js.init(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	u := &unstructured.Unstructured{}
+	u.SetName(job.GetName())
+	u.SetNamespace(job.GetNamespace())
+	u.SetGroupVersionKind(job.GroupVersionKind())
+
+	return js.internal.Delete(ctx, u)
+}
+
+func (js *Jobs) Describe(ctx context.Context, name string) (*batchv1.Job, error) {
+	job, err := js.init(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	key := k8s.ObjectKeyFromObject(job)
+	u := &unstructured.Unstructured{}
+	u.SetGroupVersionKind(job.GroupVersionKind())
+	if err = js.internal.Get(ctx, key, u); err != nil {
+		return nil, err
+	}
+	return job, nil
+}
+
+func (js *Jobs) List(ctx context.Context) ([]*batchv1.Job, error) {
+	var result []*batchv1.Job
+	jobs := &batchv1.JobList{}
+	u := &unstructured.UnstructuredList{}
+	u.SetGroupVersionKind(jobs.GroupVersionKind())
+	if err := js.internal.List(ctx, u, k8s.InNamespace(js.namespace.name)); err != nil {
+		return nil, err
+	}
+	for _, k := range u.Items {
+		job, err := js.init(ctx, k.GetName())
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, job)
+	}
+	return result, nil
 }

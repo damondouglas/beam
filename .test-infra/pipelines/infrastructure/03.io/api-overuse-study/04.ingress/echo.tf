@@ -27,15 +27,14 @@ resource "kubernetes_service" "echo" {
     annotations = var.annotations
   }
   spec {
-    type                    = var.service_type
-    external_traffic_policy = "Cluster"
-    selector                = {
+    type     = var.service_type
+    selector = {
       app = var.echo_service.name
     }
     port {
       name        = "tcp-port"
       port        = var.echo_service.port
-      target_port = var.echo_service.port
+      target_port = var.echo_service.target_port
       protocol    = "TCP"
     }
   }

@@ -1,4 +1,3 @@
-
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements. See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
@@ -24,6 +23,7 @@ data:
   CACHE_HOST: "redis-master:6379"
   REFRESHER_IMAGE: "ko.local/github.com/apache/beam/test-infra/pipelines/src/main/go/cmd/api_overuse_study/refresher"
   NAMESPACE: "api-overuse-study"
+  LOG_LEVEL: "debug"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -41,11 +41,11 @@ spec:
     spec:
       serviceAccountName: api-overuse-study
       containers:
-        - name: quota
-          image: ko://github.com/apache/beam/test-infra/pipelines/src/main/go/cmd/api_overuse_study/quota
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8080
-          envFrom:
-            - configMapRef:
-                name: quota
+      - name: quota
+        image: ko://github.com/apache/beam/test-infra/pipelines/src/main/go/cmd/api_overuse_study/quota
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: quota

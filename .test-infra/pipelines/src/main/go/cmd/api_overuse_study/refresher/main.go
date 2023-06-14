@@ -46,18 +46,20 @@ var (
 	size     uint64
 	interval time.Duration
 
-	logger = logging.NewFromEnvironment(
+	logger = logging.New(
 		context.Background(),
 		"github.com/apache/beam/.test-infra/pipelines/src/main/go/cmd/api_overuse_study/refresher",
 		logging.LevelVariable)
 	cacheRefresher cache.Refresher
 	subscriber     cache.Subscriber
+
+	env = logging.Any("env", environment.Map(required...))
 )
 
 func init() {
 	ctx := context.Background()
 	if err := vars(ctx); err != nil {
-		logger.Fatal(ctx, err.Error())
+		logger.Fatal(ctx, err, env)
 	}
 }
 
@@ -66,7 +68,7 @@ func vars(ctx context.Context) error {
 	if err = environment.Missing(required...); err != nil {
 		return err
 	}
-	logger.Debug(ctx, "environment", logging.Any("required", required))
+	logger.Debug(ctx, "environment", logging.Any("required", required), env)
 
 	if size, err = strconv.ParseUint(cache.QuotaSize.Value(), 10, 64); err != nil {
 		return err
@@ -97,7 +99,7 @@ func vars(ctx context.Context) error {
 func main() {
 	ctx := context.Background()
 	if err := run(); err != nil {
-		logger.Fatal(ctx, err.Error())
+		logger.Fatal(ctx, err)
 	}
 }
 

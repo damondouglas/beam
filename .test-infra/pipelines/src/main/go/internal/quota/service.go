@@ -19,16 +19,20 @@ package quota
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/apache/beam/test-infra/pipelines/src/main/go/internal/cache"
 	"github.com/apache/beam/test-infra/pipelines/src/main/go/internal/k8s"
 	"github.com/apache/beam/test-infra/pipelines/src/main/go/internal/logging"
 	quotav1 "github.com/apache/beam/test-infra/pipelines/src/main/go/internal/proto/quota/v1"
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
-	jobName = "refresher-service"
+	jobNamePrefix = "refresher-service"
 )
 
 // RefresherServiceSpec configures a Kubernetes Job to refresh a quota.
@@ -73,8 +77,8 @@ func RegisterService(ctx context.Context, server *grpc.Server, spec *ServiceSpec
 		return err
 	}
 	svc := &quotaService{
-		logger: logging.NewFromEnvironment(
-			context.Background(),
+		logger: logging.New(
+			ctx,
 			"github.com/apache/beam/.test-infra/pipelines/src/main/go/internal/quota",
 			logging.LevelVariable),
 		spec: spec,
@@ -97,42 +101,84 @@ func (q *quotaService) Create(ctx context.Context, request *quotav1.CreateQuotaR
 		logging.Any("request", request))
 
 	qq := request.Quota
+	if qq == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "request %T is nil but required", request.Quota)
+	}
 
 	spec := (*k8s.Spec)(q.spec.RefresherServiceSpec)
-	spec.Name = fmt.Sprintf("%s-%s", jobName, qq.Id)
+	spec.Name = jobName(qq.Id)
 
-	j, err := q.spec.JobsClient.Start(ctx, spec)
+	j, err := q.spec.JobsClient.Create(ctx, spec)
 	if err != nil {
-		q.logger.Error(ctx, err.Error(), logging.Any("request", request),
-			logging.Any("jobSpec", spec))
-		return nil, err
+		errorId := uuid.New().String()
+		q.logger.Error(ctx, err, logging.Any("request", request),
+			logging.Any("jobSpec", spec), logging.String("errorId", errorId))
+		return nil, status.Errorf(codes.Internal, "Service encountered an internal error associated with the request, search logs for errorId: %s", errorId)
 	}
 
 	q.logger.Debug(ctx, "created refresher-service job",
 		logging.Any("job", j))
 
-	return &quotav1.CreateQuotaResponse{}, nil
+	return &quotav1.CreateQuotaResponse{
+		Quota: &quotav1.Quota{
+			Id:   qq.Id,
+			Size: qq.Size,
+		},
+	}, nil
 }
 
 // List receives and fulfills a request to list available quotas.
-func (q *quotaService) List(ctx context.Context, request *quotav1.ListQuotasRequest) (*quotav1.ListQuotasResponse, error) {
-	return nil, fmt.Errorf("not yet implemented")
+func (q *quotaService) List(ctx context.Context, _ *quotav1.ListQuotasRequest) (*quotav1.ListQuotasResponse, error) {
+	var result []*quotav1.Quota
+	jobs, err := q.spec.JobsClient.List(ctx)
+	if err != nil {
+		errorId := uuid.New().String()
+		q.logger.Error(ctx, err, logging.String("errorId", errorId))
+		return nil, status.Errorf(codes.Internal, "Service encountered an internal error associated with the request, search logs for errorId: %s", errorId)
+	}
+	for _, k := range jobs {
+		result = append(result, &quotav1.Quota{
+			Id: strings.ReplaceAll(k.Name, fmt.Sprintf("%s-", jobNamePrefix), ""),
+		})
+	}
+	return &quotav1.ListQuotasResponse{
+		List: result,
+	}, nil
 }
 
 // Delete receives and fulfills a request to delete a quota.
 func (q *quotaService) Delete(ctx context.Context, request *quotav1.DeleteQuotaRequest) (*quotav1.DeleteQuotaResponse, error) {
-	q.logger.Info(ctx, "received delete quota request",
+	q.logger.Debug(ctx, "received delete quota request",
 		logging.Any("request", request))
+
+	if request.Id == "" {
+		return nil, status.Error(codes.InvalidArgument, "missing required Id from request")
+	}
 
 	payload := []byte(fmt.Sprintf("%s:%s", request.Id, "delete"))
 
 	if err := q.spec.Publisher.Publish(ctx, request.Id, payload); err != nil {
-		return nil, fmt.Errorf("error publishing delete request key: %s, payload: %s, err %w", request.Id, string(payload), err)
+		errorId := uuid.New().String()
+		q.logger.Error(ctx, fmt.Errorf("error publishing delete request: %w", err),
+			logging.String("key", request.Id),
+			logging.String("errorId", errorId),
+			logging.String("payload", string(payload)),
+		)
+		return nil, status.Errorf(codes.Internal, "Service encountered internal error associated with request, search logs for associated errorId: %s", errorId)
 	}
 
 	q.logger.Debug(ctx, "published deletion request",
 		logging.String("key", request.Id),
 		logging.String("payload", string(payload)))
+
+	if err := q.spec.JobsClient.Delete(ctx, jobName(request.Id)); err != nil {
+		errorId := uuid.New().String()
+		q.logger.Error(ctx, fmt.Errorf("error deleting Job: %w", err),
+			logging.Any("request", request),
+			logging.String("errorId", errorId))
+
+		return nil, status.Errorf(codes.Internal, "Service encountered internal error associated with request, search logs for associated errorId: %s", errorId)
+	}
 
 	return &quotav1.DeleteQuotaResponse{
 		Quota: &quotav1.Quota{
@@ -143,5 +189,23 @@ func (q *quotaService) Delete(ctx context.Context, request *quotav1.DeleteQuotaR
 
 // Describe receives and fulfills a request to describe a quota.
 func (q *quotaService) Describe(ctx context.Context, request *quotav1.DescribeQuotaRequest) (*quotav1.DescribeQuotaResponse, error) {
-	return nil, fmt.Errorf("not yet implemented")
+	name := jobName(request.Id)
+	job, err := q.spec.JobsClient.Describe(ctx, name)
+	if err != nil {
+		errorId := uuid.New().String()
+		q.logger.Error(ctx, fmt.Errorf("error querying Job: %w", err),
+			logging.Any("request", request),
+			logging.String("errorId", errorId))
+
+		return nil, status.Errorf(codes.Internal, "Service encountered internal error associated with request, search logs for associated errorId: %s", errorId)
+	}
+	return &quotav1.DescribeQuotaResponse{
+		Quota: &quotav1.Quota{
+			Id: strings.ReplaceAll(job.Name, fmt.Sprintf("%s-", jobNamePrefix), ""),
+		},
+	}, nil
+}
+
+func jobName(quotaId string) string {
+	return fmt.Sprintf("%s-%s", jobNamePrefix, quotaId)
 }

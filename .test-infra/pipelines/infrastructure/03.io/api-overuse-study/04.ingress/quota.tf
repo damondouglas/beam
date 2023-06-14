@@ -27,15 +27,14 @@ resource "kubernetes_service" "quota" {
     annotations = var.annotations
   }
   spec {
-    type                    = var.service_type
-    external_traffic_policy = "Cluster"
-    selector                = {
+    type     = var.service_type
+    selector = {
       app = var.quota_service.name
     }
     port {
       name        = "tcp-port"
       port        = var.quota_service.port
-      target_port = var.quota_service.port
+      target_port = var.quota_service.target_port
       protocol    = "TCP"
     }
   }

@@ -27,7 +27,7 @@ import (
 const maxRetries = 3
 
 var (
-	logger = logging.NewFromEnvironment(
+	logger = logging.New(
 		context.Background(),
 		"github.com/apache/beam/.test-infra/pipelines/src/main/go/internal/cache/redis",
 		logging.LevelVariable)

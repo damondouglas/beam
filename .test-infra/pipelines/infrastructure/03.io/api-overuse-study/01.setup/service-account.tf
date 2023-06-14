@@ -31,8 +31,8 @@ resource "kubernetes_role" "can_create_job" {
     namespace = kubernetes_namespace.default.metadata[0].name
   }
   rule {
-    api_groups = [""]
-    resources  = ["jobs"]
+    api_groups = ["batch"]
+    resources  = ["jobs", "namespaces"]
     verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
   }
 }
@@ -44,8 +44,9 @@ resource "kubernetes_role_binding" "default" {
     namespace = kubernetes_namespace.default.metadata[0].name
   }
   subject {
-    kind = "ServiceAccount"
-    name = kubernetes_service_account.default.metadata[0].name
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.default.metadata[0].name
+    namespace = kubernetes_namespace.default.metadata[0].name
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"

@@ -42,7 +42,7 @@ var (
 	port environment.Variable = "PORT"
 
 	address = fmt.Sprintf(":%s", port.Value())
-	logger  = logging.NewFromEnvironment(
+	logger  = logging.New(
 		context.Background(),
 		"github.com/apache/beam/.test-infra/pipelines/src/main/go/cmd/api_overuse_study/echo",
 		logging.LevelVariable)
@@ -60,11 +60,11 @@ func init() {
 	ctx := context.Background()
 
 	if err := environment.Missing(required...); err != nil {
-		logger.Fatal(ctx, err.Error(), logging.Any("env", env))
+		logger.Fatal(ctx, err, logging.Any("env", env))
 	}
 
 	if err := vars(ctx); err != nil {
-		logger.Fatal(ctx, err.Error(), logging.Any("env", env))
+		logger.Fatal(ctx, err, logging.Any("env", env))
 	}
 
 }
@@ -91,7 +91,7 @@ func main() {
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
 		err = fmt.Errorf("error listening on address: %s, %w", address, err)
-		logger.Error(ctx, err.Error(), logging.Any("env", env))
+		logger.Error(ctx, err, logging.Any("env", env))
 		return
 	}
 
@@ -99,13 +99,13 @@ func main() {
 
 	if err := echo.RegisterService(ctx, svc, cacheQuota); err != nil {
 		err = fmt.Errorf("error registering echo service: %w", err)
-		logger.Error(ctx, err.Error())
+		logger.Error(ctx, err)
 		return
 	}
 
 	go func() {
 		if err := svc.Serve(lis); err != nil {
-			logger.Error(ctx, err.Error())
+			logger.Error(ctx, err)
 			return
 		}
 	}()

@@ -47,10 +47,15 @@ var (
 		RefresherServiceSpec: &quota.RefresherServiceSpec{
 			ContainerName: "refresher",
 			Image:         refresherImage.Value(),
+			Environment: []environment.Variable{
+				namespace,
+				cache.Host,
+				logging.LevelVariable,
+			},
 		},
 	}
 
-	logger = logging.NewFromEnvironment(
+	logger = logging.New(
 		context.Background(),
 		"github.com/apache/beam/.test-infra/pipelines/src/main/go/cmd/api_overuse_study/quota",
 		logging.LevelVariable)
@@ -69,11 +74,11 @@ var (
 func init() {
 	ctx := context.Background()
 	if err := environment.Missing(required...); err != nil {
-		logger.Fatal(ctx, err.Error(), logging.Any("env", env))
+		logger.Fatal(ctx, err, logging.Any("env", env))
 	}
 
 	if err := vars(ctx); err != nil {
-		logger.Fatal(ctx, err.Error(), logging.Any("env", env))
+		logger.Fatal(ctx, err, logging.Any("env", env))
 	}
 }
 
@@ -110,19 +115,19 @@ func main() {
 
 	lis, err := net.Listen("tcp", address)
 	if err != nil {
-		logger.Error(ctx, err.Error(), logging.Any("env", env))
+		logger.Error(ctx, err, logging.Any("env", env))
 	}
 
 	svc := grpc.NewServer()
 
 	if err := quota.RegisterService(ctx, svc, spec); err != nil {
-		logger.Error(ctx, err.Error(), logging.Any("env", env))
+		logger.Error(ctx, err, logging.Any("env", env))
 		return
 	}
 
 	go func() {
 		if err := svc.Serve(lis); err != nil {
-			logger.Error(ctx, err.Error(), logging.Any("env", env))
+			logger.Error(ctx, err, logging.Any("env", env))
 			return
 		}
 	}()

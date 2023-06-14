@@ -19,11 +19,13 @@
 namespace = "api-overuse-study"
 
 echo_service = {
-  name = "echo"
-  port = 8080
+  name        = "echo"
+  port        = 8080
+  target_port = 8080
 }
 
 quota_service = {
-  name = "quota"
-  port = 8080
+  name        = "quota"
+  port        = 8081
+  target_port = 8080
 }
