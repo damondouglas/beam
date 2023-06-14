@@ -74,6 +74,14 @@ func (q *RedisCache) Decrement(ctx context.Context, quotaID string) error {
 func (q *RedisCache) Refresh(ctx context.Context, quotaID string, size uint64, interval time.Duration) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	if err := q.refresh(ctx, quotaID, size, interval); err != nil {
+		return err
+	}
+	logger.Debug(ctx, "quota initialized",
+		logging.String("quotaID", quotaID),
+		logging.Uint64("size", size))
+
 	tick := time.Tick(interval)
 	for {
 		select {
@@ -98,7 +106,7 @@ func (q *RedisCache) refresh(ctx context.Context, quotaID string, size uint64, i
 // Publish an Event of key.
 func (q *RedisCache) Publish(ctx context.Context, key string, event Event) error {
 	client := (*redis.Client)(q)
-	return client.Publish(ctx, key, event).Err()
+	return client.Publish(ctx, key, ([]byte)(event)).Err()
 }
 
 // Subscribe to events identified by keys.

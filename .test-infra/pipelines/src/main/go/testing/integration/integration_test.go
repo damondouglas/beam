@@ -129,18 +129,23 @@ func TestEchoErrors(t *testing.T) {
 	}
 }
 
-func TestEchoWithQuota(t *testing.T) {
+func TestQuota(t *testing.T) {
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
+
 	existsId := uuid.New().String()
+
 	quota := &quotav1.Quota{
 		Id:                          existsId,
 		Size:                        10,
-		RefreshMillisecondsInterval: (time.Second * 3).Milliseconds(),
+		RefreshMillisecondsInterval: 3000,
 	}
+
 	createRequest := &quotav1.CreateQuotaRequest{
 		Quota: quota,
 	}
+
 	created, err := quotaClient.Create(ctx, createRequest)
 	if err != nil {
 		t.Fatalf("error invoking %T.Create(%+v): %s", quotaClient, createRequest, err)
@@ -155,6 +160,53 @@ func TestEchoWithQuota(t *testing.T) {
 		t.Errorf("%T.Create(%+v) = %s, want: %s", quotaClient, createRequest, created.Quota.Id, quota.Id)
 	}
 
+	describeReq := &quotav1.DescribeQuotaRequest{
+		Id: existsId,
+	}
+
+	queried, err := quotaClient.Describe(ctx, describeReq)
+
+	if err != nil {
+		t.Errorf("%T.Describe(%+v) err %s", quotaClient, describeReq, err)
+		return
+	}
+
+	if queried.Quota.Id != describeReq.Id {
+		t.Errorf("%T.Describe(%+v) = %s, want %s", quotaClient, describeReq, queried.Quota.Id, existsId)
+	}
+
+	listReq := &quotav1.ListQuotasRequest{}
+
+	list, err := quotaClient.List(ctx, listReq)
+	if err != nil {
+		t.Errorf("%T.List(%+v) err %s", quotaClient, listReq, err)
+		return
+	}
+
+	if len(list.List) == 0 {
+		t.Errorf("%T.List(%+v) is empty", quotaClient, listReq)
+		return
+	}
+
+	item := list.List[0]
+	if item.Id != existsId {
+		t.Errorf("%T.List(%+v) = %s, want: %s", quotaClient, listReq, item.Id, existsId)
+	}
+
+	deleteReq := &quotav1.DeleteQuotaRequest{
+		Id: existsId,
+	}
+
+	deleteResp, err := quotaClient.Delete(ctx, deleteReq)
+	if err != nil {
+		t.Errorf("%T.Delete(%+v) err %s", quotaClient, deleteReq, err)
+		return
+	}
+
+	if deleteResp.Quota.Id != existsId {
+		t.Errorf("%T.Delete(%+v) = %s, want %s", quotaClient, deleteReq, deleteResp.Quota.Id, existsId)
+	}
+
 	select {
 	case <-ctx.Done():
 		if ctx.Err() != nil {
@@ -163,4 +215,5 @@ func TestEchoWithQuota(t *testing.T) {
 	default:
 		return
 	}
+
 }

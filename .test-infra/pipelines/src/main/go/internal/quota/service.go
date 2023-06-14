@@ -107,8 +107,13 @@ func (q *quotaService) Create(ctx context.Context, request *quotav1.CreateQuotaR
 
 	spec := (*k8s.Spec)(q.spec.RefresherServiceSpec)
 	spec.Name = jobName(qq.Id)
+	j, err := q.spec.JobsClient.Create(ctx, spec,
+		cache.Host.Key(), cache.Host.Value(),
+		cache.QuotaId.Key(), request.Quota.Id,
+		cache.QuotaSize.Key(), fmt.Sprint(request.Quota.Size),
+		cache.QuotaRefreshInterval.Key(), fmt.Sprintf("%vms", request.Quota.RefreshMillisecondsInterval),
+		logging.LevelVariable.Key(), logging.LevelVariable.Value())
 
-	j, err := q.spec.JobsClient.Create(ctx, spec)
 	if err != nil {
 		errorId := uuid.New().String()
 		q.logger.Error(ctx, err, logging.Any("request", request),

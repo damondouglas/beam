@@ -18,13 +18,13 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/apache/beam/test-infra/pipelines/src/main/go/internal/environment"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8s "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -66,7 +66,10 @@ func (js *Jobs) init(ctx context.Context, name string) (*batchv1.Job, error) {
 }
 
 // Create a Kubernetes Job, configured with a Spec.
-func (js *Jobs) Create(ctx context.Context, spec *Spec) (*batchv1.Job, error) {
+func (js *Jobs) Create(ctx context.Context, spec *Spec, envKV ...string) (*batchv1.Job, error) {
+	if len(envKV)%2 != 0 {
+		return nil, fmt.Errorf("envKV format invalid, expected key1, value1, key2, value2, ..., got: %s", strings.Join(envKV, ", "))
+	}
 	job, err := js.init(ctx, spec.Name)
 	if err != nil {
 		return nil, err
@@ -78,10 +81,12 @@ func (js *Jobs) Create(ctx context.Context, spec *Spec) (*batchv1.Job, error) {
 	}
 
 	var envs []corev1.EnvVar
-	for _, v := range spec.Environment {
+	for i := 0; i < len(envKV)-1; i += 2 {
+		key := envKV[i]
+		value := envKV[i+1]
 		envs = append(envs, corev1.EnvVar{
-			Name:  v.Key(),
-			Value: v.Value(),
+			Name:  key,
+			Value: value,
 		})
 	}
 
@@ -93,10 +98,11 @@ func (js *Jobs) Create(ctx context.Context, spec *Spec) (*batchv1.Job, error) {
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
 					{
-						Name:    spec.ContainerName,
-						Image:   spec.Image,
-						Command: spec.Command,
-						Env:     envs,
+						Name:            spec.ContainerName,
+						Image:           spec.Image,
+						Command:         spec.Command,
+						Env:             envs,
+						ImagePullPolicy: corev1.PullIfNotPresent,
 					},
 				},
 				RestartPolicy: restartPolicy,
@@ -112,29 +118,22 @@ func (js *Jobs) Create(ctx context.Context, spec *Spec) (*batchv1.Job, error) {
 }
 
 func (js *Jobs) Delete(ctx context.Context, name string) error {
-	job, err := js.init(ctx, name)
-	if err != nil {
-		return err
+	job := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: js.namespace.name,
+			Name:      name,
+		},
 	}
 
-	u := &unstructured.Unstructured{}
-	u.SetName(job.GetName())
-	u.SetNamespace(job.GetNamespace())
-	u.SetGroupVersionKind(job.GroupVersionKind())
-
-	return js.internal.Delete(ctx, u)
+	return js.internal.Delete(ctx, job)
 }
 
 func (js *Jobs) Describe(ctx context.Context, name string) (*batchv1.Job, error) {
-	job, err := js.init(ctx, name)
-	if err != nil {
-		return nil, err
-	}
-
-	key := k8s.ObjectKeyFromObject(job)
-	u := &unstructured.Unstructured{}
-	u.SetGroupVersionKind(job.GroupVersionKind())
-	if err = js.internal.Get(ctx, key, u); err != nil {
+	job := &batchv1.Job{}
+	if err := js.internal.Get(ctx, k8s.ObjectKey{
+		Namespace: js.namespace.name,
+		Name:      name,
+	}, job); err != nil {
 		return nil, err
 	}
 	return job, nil
@@ -143,12 +142,10 @@ func (js *Jobs) Describe(ctx context.Context, name string) (*batchv1.Job, error)
 func (js *Jobs) List(ctx context.Context) ([]*batchv1.Job, error) {
 	var result []*batchv1.Job
 	jobs := &batchv1.JobList{}
-	u := &unstructured.UnstructuredList{}
-	u.SetGroupVersionKind(jobs.GroupVersionKind())
-	if err := js.internal.List(ctx, u, k8s.InNamespace(js.namespace.name)); err != nil {
+	if err := js.internal.List(ctx, jobs, k8s.InNamespace(js.namespace.name)); err != nil {
 		return nil, err
 	}
-	for _, k := range u.Items {
+	for _, k := range jobs.Items {
 		job, err := js.init(ctx, k.GetName())
 		if err != nil {
 			return nil, err

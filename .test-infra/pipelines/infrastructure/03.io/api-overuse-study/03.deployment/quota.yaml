@@ -21,7 +21,7 @@ metadata:
 data:
   PORT: "8080"
   CACHE_HOST: "redis-master:6379"
-  REFRESHER_IMAGE: "ko.local/github.com/apache/beam/test-infra/pipelines/src/main/go/cmd/api_overuse_study/refresher"
+  REFRESHER_IMAGE: "ko.local/refresher:latest"
   NAMESPACE: "api-overuse-study"
   LOG_LEVEL: "debug"
 ---
@@ -42,7 +42,7 @@ spec:
       serviceAccountName: api-overuse-study
       containers:
       - name: quota
-        image: ko://github.com/apache/beam/test-infra/pipelines/src/main/go/cmd/api_overuse_study/quota
+        image: ko.local/quota:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
