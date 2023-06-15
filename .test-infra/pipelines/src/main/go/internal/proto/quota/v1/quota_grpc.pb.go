@@ -22,7 +22,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: proto/quota/v1/quota.proto
+// source: proto/v1/quota.proto
 
 package v1
 
@@ -49,9 +49,13 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QuotaServiceClient interface {
+	// Create a new quota entry.
 	Create(ctx context.Context, in *CreateQuotaRequest, opts ...grpc.CallOption) (*CreateQuotaResponse, error)
+	// List available quota entries.
 	List(ctx context.Context, in *ListQuotasRequest, opts ...grpc.CallOption) (*ListQuotasResponse, error)
+	// Delete a quota entry.
 	Delete(ctx context.Context, in *DeleteQuotaRequest, opts ...grpc.CallOption) (*DeleteQuotaResponse, error)
+	// Describe a quota entry.
 	Describe(ctx context.Context, in *DescribeQuotaRequest, opts ...grpc.CallOption) (*DescribeQuotaResponse, error)
 }
 
@@ -103,9 +107,13 @@ func (c *quotaServiceClient) Describe(ctx context.Context, in *DescribeQuotaRequ
 // All implementations must embed UnimplementedQuotaServiceServer
 // for forward compatibility
 type QuotaServiceServer interface {
+	// Create a new quota entry.
 	Create(context.Context, *CreateQuotaRequest) (*CreateQuotaResponse, error)
+	// List available quota entries.
 	List(context.Context, *ListQuotasRequest) (*ListQuotasResponse, error)
+	// Delete a quota entry.
 	Delete(context.Context, *DeleteQuotaRequest) (*DeleteQuotaResponse, error)
+	// Describe a quota entry.
 	Describe(context.Context, *DescribeQuotaRequest) (*DescribeQuotaResponse, error)
 	mustEmbedUnimplementedQuotaServiceServer()
 }
@@ -236,5 +244,5 @@ var QuotaService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/quota/v1/quota.proto",
+	Metadata: "proto/v1/quota.proto",
 }

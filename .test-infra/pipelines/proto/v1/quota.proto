@@ -24,40 +24,23 @@ syntax = "proto3";
 
 package proto.quota.v1;
 option go_package = "proto/quota/v1";
-
-import "google/api/annotations.proto";
+option java_package = "org.apache.beam.testinfra.pipelines.proto.quota.v1";
+option java_generic_services = true;
 
 // A QuotaService manages the internal cached quota state of the application.
 service QuotaService {
 
   // Create a new quota entry.
-  rpc Create(CreateQuotaRequest) returns (CreateQuotaResponse) {
-    option (google.api.http) = {
-      post: "/v1/quotas"
-      body: "quota"
-    };
-  }
+  rpc Create(CreateQuotaRequest) returns (CreateQuotaResponse) {}
 
   // List available quota entries.
-  rpc List(ListQuotasRequest) returns (ListQuotasResponse) {
-    option (google.api.http) = {
-      get: "/v1/quotas"
-    };
-  }
+  rpc List(ListQuotasRequest) returns (ListQuotasResponse) {}
 
   // Delete a quota entry.
-  rpc Delete(DeleteQuotaRequest) returns (DeleteQuotaResponse) {
-    option (google.api.http) = {
-      delete: "/v1/quotas/*"
-    };
-  }
+  rpc Delete(DeleteQuotaRequest) returns (DeleteQuotaResponse) {}
 
   // Describe a quota entry.
-  rpc Describe(DescribeQuotaRequest) returns (DescribeQuotaResponse) {
-    option (google.api.http) = {
-      get: "/v1/quotas/*"
-    };
-  }
+  rpc Describe(DescribeQuotaRequest) returns (DescribeQuotaResponse) {}
 }
 
 // CreateQuotaRequest defines a request for a new quota entry.

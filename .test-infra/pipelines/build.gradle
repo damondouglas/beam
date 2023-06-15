@@ -78,7 +78,19 @@ dependencies {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'IntegrationTest'
+    }
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+tasks.register('integrationTest', Test) {
+    group = "verification"
+    useJUnitPlatform {
+            includeTags 'IntegrationTest'
+    }
     testLogging {
         events "passed", "skipped", "failed"
     }

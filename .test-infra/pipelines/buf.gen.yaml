@@ -35,3 +35,5 @@ plugins:
   out: src/main/go/internal
 - name: grpc-gateway
   out: src/main/go/internal
+- name: java
+  out: src/main/java

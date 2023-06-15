@@ -15,38 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.beam.testinfra.pipelines.proto.v1.echo;
 
-/*
- * Protocol buffers describing a simple mock API that echos a request.
- */
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-syntax = "proto3";
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-package proto.echo.v1;
-option go_package = "proto/echo/v1";
+@Tag("IntegrationTest")
+public class EchoTestIT {
 
-import "google/api/annotations.proto";
+  private static final String ECHO_HOST = System.getenv("ECHO_HOST");
 
-// EchoService simulates a mock API that echos a request.
-service EchoService {
-
-  // Echo an EchoRequest payload in an EchoResponse.
-  rpc Echo(EchoRequest) returns (EchoResponse) {
-    option (google.api.http) = {
-      post: "v1/echo"
-      body: "echo"
-    };
+  @Test
+  void testEchoErrors() {
+    assertEquals("localhost:8080", ECHO_HOST);
   }
-}
-
-// The request to echo a payload.
-message EchoRequest {
-  string id = 1;
-  bytes payload = 2;
-}
-
-// The response echo of a request payload.
-message EchoResponse {
-  string id = 1;
-  bytes payload = 2;
 }

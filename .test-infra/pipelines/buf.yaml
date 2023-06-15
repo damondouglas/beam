@@ -16,5 +16,3 @@
 # Configures buf to include various proto dependencies.
 # See buf.build for details.
 version: v1
-deps:
-- buf.build/googleapis/googleapis
