@@ -25,7 +25,6 @@ syntax = "proto3";
 package proto.quota.v1;
 option go_package = "proto/quota/v1";
 option java_package = "org.apache.beam.testinfra.pipelines.proto.quota.v1";
-option java_generic_services = true;
 
 // A QuotaService manages the internal cached quota state of the application.
 service QuotaService {

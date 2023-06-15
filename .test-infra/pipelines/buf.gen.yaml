@@ -37,3 +37,8 @@ plugins:
   out: src/main/go/internal
 - name: java
   out: src/main/java
+  # Download protoc-gen-grpc-java from https://repo1.maven.org/maven2/io/grpc/protoc-gen-grpc-java/1.56.0/
+  # Rename to protoc-gen-grpc-java
+  # Add to system path
+- name: grpc-java
+  out: src/main/java

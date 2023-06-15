@@ -17,7 +17,11 @@
  */
 package org.apache.beam.testinfra.pipelines.proto.echo.v1;
 
-@SuppressWarnings({"ReferenceEquality", "MissingOverride", "override.param"})
+@SuppressWarnings({
+    "override.param",
+    "MissingOverride",
+    "ReferenceEquality",
+})
 public final class Echo {
   private Echo() {}
 
@@ -1393,263 +1397,6 @@ public final class Echo {
     }
   }
 
-  /**
-   *
-   *
-   * <pre>
-   * EchoService simulates a mock API that echos a request.
-   * </pre>
-   *
-   * Protobuf service {@code proto.echo.v1.EchoService}
-   */
-  public abstract static class EchoService implements com.google.protobuf.Service {
-    protected EchoService() {}
-
-    public interface Interface {
-      /**
-       *
-       *
-       * <pre>
-       * Echo an EchoRequest payload in an EchoResponse.
-       * </pre>
-       *
-       * <code>rpc Echo(.proto.echo.v1.EchoRequest) returns (.proto.echo.v1.EchoResponse);</code>
-       */
-      public abstract void echo(
-          com.google.protobuf.RpcController controller,
-          org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoRequest request,
-          com.google.protobuf.RpcCallback<
-                  org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse>
-              done);
-    }
-
-    public static com.google.protobuf.Service newReflectiveService(final Interface impl) {
-      return new EchoService() {
-        @java.lang.Override
-        public void echo(
-            com.google.protobuf.RpcController controller,
-            org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoRequest request,
-            com.google.protobuf.RpcCallback<
-                    org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse>
-                done) {
-          impl.echo(controller, request, done);
-        }
-      };
-    }
-
-    public static com.google.protobuf.BlockingService newReflectiveBlockingService(
-        final BlockingInterface impl) {
-      return new com.google.protobuf.BlockingService() {
-        public final com.google.protobuf.Descriptors.ServiceDescriptor getDescriptorForType() {
-          return getDescriptor();
-        }
-
-        public final com.google.protobuf.Message callBlockingMethod(
-            com.google.protobuf.Descriptors.MethodDescriptor method,
-            com.google.protobuf.RpcController controller,
-            com.google.protobuf.Message request)
-            throws com.google.protobuf.ServiceException {
-          if (method.getService() != getDescriptor()) {
-            throw new java.lang.IllegalArgumentException(
-                "Service.callBlockingMethod() given method descriptor for "
-                    + "wrong service type.");
-          }
-          switch (method.getIndex()) {
-            case 0:
-              return impl.echo(
-                  controller,
-                  (org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoRequest) request);
-            default:
-              throw new java.lang.AssertionError("Can't get here.");
-          }
-        }
-
-        public final com.google.protobuf.Message getRequestPrototype(
-            com.google.protobuf.Descriptors.MethodDescriptor method) {
-          if (method.getService() != getDescriptor()) {
-            throw new java.lang.IllegalArgumentException(
-                "Service.getRequestPrototype() given method "
-                    + "descriptor for wrong service type.");
-          }
-          switch (method.getIndex()) {
-            case 0:
-              return org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoRequest
-                  .getDefaultInstance();
-            default:
-              throw new java.lang.AssertionError("Can't get here.");
-          }
-        }
-
-        public final com.google.protobuf.Message getResponsePrototype(
-            com.google.protobuf.Descriptors.MethodDescriptor method) {
-          if (method.getService() != getDescriptor()) {
-            throw new java.lang.IllegalArgumentException(
-                "Service.getResponsePrototype() given method "
-                    + "descriptor for wrong service type.");
-          }
-          switch (method.getIndex()) {
-            case 0:
-              return org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse
-                  .getDefaultInstance();
-            default:
-              throw new java.lang.AssertionError("Can't get here.");
-          }
-        }
-      };
-    }
-
-    /**
-     *
-     *
-     * <pre>
-     * Echo an EchoRequest payload in an EchoResponse.
-     * </pre>
-     *
-     * <code>rpc Echo(.proto.echo.v1.EchoRequest) returns (.proto.echo.v1.EchoResponse);</code>
-     */
-    public abstract void echo(
-        com.google.protobuf.RpcController controller,
-        org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoRequest request,
-        com.google.protobuf.RpcCallback<
-                org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse>
-            done);
-
-    public static final com.google.protobuf.Descriptors.ServiceDescriptor getDescriptor() {
-      return org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.getDescriptor()
-          .getServices()
-          .get(0);
-    }
-
-    public final com.google.protobuf.Descriptors.ServiceDescriptor getDescriptorForType() {
-      return getDescriptor();
-    }
-
-    public final void callMethod(
-        com.google.protobuf.Descriptors.MethodDescriptor method,
-        com.google.protobuf.RpcController controller,
-        com.google.protobuf.Message request,
-        com.google.protobuf.RpcCallback<com.google.protobuf.Message> done) {
-      if (method.getService() != getDescriptor()) {
-        throw new java.lang.IllegalArgumentException(
-            "Service.callMethod() given method descriptor for wrong " + "service type.");
-      }
-      switch (method.getIndex()) {
-        case 0:
-          this.echo(
-              controller,
-              (org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoRequest) request,
-              com.google.protobuf.RpcUtil
-                  .<org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse>
-                      specializeCallback(done));
-          return;
-        default:
-          throw new java.lang.AssertionError("Can't get here.");
-      }
-    }
-
-    public final com.google.protobuf.Message getRequestPrototype(
-        com.google.protobuf.Descriptors.MethodDescriptor method) {
-      if (method.getService() != getDescriptor()) {
-        throw new java.lang.IllegalArgumentException(
-            "Service.getRequestPrototype() given method " + "descriptor for wrong service type.");
-      }
-      switch (method.getIndex()) {
-        case 0:
-          return org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoRequest
-              .getDefaultInstance();
-        default:
-          throw new java.lang.AssertionError("Can't get here.");
-      }
-    }
-
-    public final com.google.protobuf.Message getResponsePrototype(
-        com.google.protobuf.Descriptors.MethodDescriptor method) {
-      if (method.getService() != getDescriptor()) {
-        throw new java.lang.IllegalArgumentException(
-            "Service.getResponsePrototype() given method " + "descriptor for wrong service type.");
-      }
-      switch (method.getIndex()) {
-        case 0:
-          return org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse
-              .getDefaultInstance();
-        default:
-          throw new java.lang.AssertionError("Can't get here.");
-      }
-    }
-
-    public static Stub newStub(com.google.protobuf.RpcChannel channel) {
-      return new Stub(channel);
-    }
-
-    public static final class Stub
-        extends org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoService
-        implements Interface {
-      private Stub(com.google.protobuf.RpcChannel channel) {
-        this.channel = channel;
-      }
-
-      private final com.google.protobuf.RpcChannel channel;
-
-      public com.google.protobuf.RpcChannel getChannel() {
-        return channel;
-      }
-
-      public void echo(
-          com.google.protobuf.RpcController controller,
-          org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoRequest request,
-          com.google.protobuf.RpcCallback<
-                  org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse>
-              done) {
-        channel.callMethod(
-            getDescriptor().getMethods().get(0),
-            controller,
-            request,
-            org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse
-                .getDefaultInstance(),
-            com.google.protobuf.RpcUtil.generalizeCallback(
-                done,
-                org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse.class,
-                org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse
-                    .getDefaultInstance()));
-      }
-    }
-
-    public static BlockingInterface newBlockingStub(
-        com.google.protobuf.BlockingRpcChannel channel) {
-      return new BlockingStub(channel);
-    }
-
-    public interface BlockingInterface {
-      public org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse echo(
-          com.google.protobuf.RpcController controller,
-          org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoRequest request)
-          throws com.google.protobuf.ServiceException;
-    }
-
-    private static final class BlockingStub implements BlockingInterface {
-      private BlockingStub(com.google.protobuf.BlockingRpcChannel channel) {
-        this.channel = channel;
-      }
-
-      private final com.google.protobuf.BlockingRpcChannel channel;
-
-      public org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse echo(
-          com.google.protobuf.RpcController controller,
-          org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoRequest request)
-          throws com.google.protobuf.ServiceException {
-        return (org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse)
-            channel.callBlockingMethod(
-                getDescriptor().getMethods().get(0),
-                controller,
-                request,
-                org.apache.beam.testinfra.pipelines.proto.echo.v1.Echo.EchoResponse
-                    .getDefaultInstance());
-      }
-    }
-
-    // @@protoc_insertion_point(class_scope:proto.echo.v1.EchoService)
-  }
-
   private static final com.google.protobuf.Descriptors.Descriptor
       internal_static_proto_echo_v1_EchoRequest_descriptor;
   private static final com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
@@ -1667,14 +1414,14 @@ public final class Echo {
 
   static {
     java.lang.String[] descriptorData = {
-      "\n\023proto/v1/echo.proto\022\rproto.echo.v1\"7\n\013"
-          + "EchoRequest\022\016\n\002id\030\001 \001(\tR\002id\022\030\n\007payload\030\002"
-          + " \001(\014R\007payload\"8\n\014EchoResponse\022\016\n\002id\030\001 \001("
-          + "\tR\002id\022\030\n\007payload\030\002 \001(\014R\007payload2P\n\013EchoS"
-          + "ervice\022A\n\004Echo\022\032.proto.echo.v1.EchoReque"
-          + "st\032\033.proto.echo.v1.EchoResponse\"\000BE\n1org"
-          + ".apache.beam.testinfra.pipelines.proto.e"
-          + "cho.v1Z\rproto/echo/v1\210\001\001b\006proto3"
+      "\n\030proto/echo/v1/echo.proto\022\rproto.echo.v"
+          + "1\"7\n\013EchoRequest\022\016\n\002id\030\001 \001(\tR\002id\022\030\n\007payl"
+          + "oad\030\002 \001(\014R\007payload\"8\n\014EchoResponse\022\016\n\002id"
+          + "\030\001 \001(\tR\002id\022\030\n\007payload\030\002 \001(\014R\007payload2P\n\013"
+          + "EchoService\022A\n\004Echo\022\032.proto.echo.v1.Echo"
+          + "Request\032\033.proto.echo.v1.EchoResponse\"\000BB"
+          + "\n1org.apache.beam.testinfra.pipelines.pr"
+          + "oto.echo.v1Z\rproto/echo/v1b\006proto3"
     };
     descriptor =
         com.google.protobuf.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(

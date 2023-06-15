@@ -22,7 +22,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: proto/v1/quota.proto
+// source: proto/quota/v1/quota.proto
 
 package v1
 
@@ -244,5 +244,5 @@ var QuotaService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/v1/quota.proto",
+	Metadata: "proto/quota/v1/quota.proto",
 }
