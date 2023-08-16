@@ -19,7 +19,11 @@ package org.apache.beam.examples.vertexai;
 
 import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 import static org.apache.beam.sdk.values.TypeDescriptors.strings;
+import static org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.Preconditions.checkState;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.Metric;
 import com.google.api.MonitoredResource;
 import com.google.api.gax.rpc.ApiException;
@@ -40,6 +44,7 @@ import com.google.cloud.logging.LoggingOptions;
 import com.google.cloud.logging.Payload.JsonPayload;
 import com.google.cloud.logging.Severity;
 import com.google.cloud.monitoring.v3.MetricServiceClient;
+import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.monitoring.v3.CreateTimeSeriesRequest;
 import com.google.monitoring.v3.Point;
@@ -69,11 +74,13 @@ import org.apache.beam.runners.dataflow.DataflowRunner;
 import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineRunner;
+import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.Validation.Required;
+import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.GroupIntoBatches;
@@ -109,13 +116,16 @@ import org.slf4j.LoggerFactory;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.exceptions.JedisException;
 
-@SuppressWarnings({"unused"})
 public class FeaturestoreWriteSyntheaExample {
+
   private static final Counter SUCCESS =
       Metrics.counter(FeaturestoreWriteSyntheaExample.class, "success");
 
   private static final Counter FAILURE =
       Metrics.counter(FeaturestoreWriteSyntheaExample.class, "failure");
+
+  private static final Counter REQUESTS =
+      Metrics.counter(FeaturestoreWriteSyntheaExample.class, "requests");
 
   public interface Options extends PipelineOptions {
 
@@ -153,6 +163,25 @@ public class FeaturestoreWriteSyntheaExample {
     String getQueueId();
 
     void setQueueId(String value);
+
+    @Required
+    String getConditionPath();
+
+    void setConditionPath(String value);
+
+    @Required
+    String getMedicationPath();
+
+    void setMedicationPath(String value);
+
+    @Required
+    String getObservationPath();
+
+    void setObservationPath(String value);
+
+    @Required
+    String getDataset();
+    void setDataset(String value);
   }
 
   public static void main(String[] args) throws IOException {
@@ -173,14 +202,16 @@ public class FeaturestoreWriteSyntheaExample {
 
     SerializableFunction<WriteFeatureValuesRequest, byte[]> encodeFn = new EncodeRequestFn();
     SerializableFunction<byte[], WriteFeatureValuesRequest> decodeFn = new DecodeRequestFn();
-    TypeDescriptor<byte[]> encodedType = new TypeDescriptor<byte[]>() {};
-    TypeDescriptor<WriteFeatureValuesRequest> decodedType =
-        TypeDescriptor.of(WriteFeatureValuesRequest.class);
+
+    PCollection<String> data = PCollectionList
+        .of(p.apply("condition/read", TextIO.read().from(options.getConditionPath())))
+        .and(p.apply("medication/read", TextIO.read().from(options.getMedicationPath())))
+        .and( p.apply("observation/read", TextIO.read().from(options.getObservationPath())))
+        .apply("flatten", Flatten.pCollections());
 
     PCollection<JsonPayload> refreshErrors =
-        p.apply(
-                "quotaRefresh/impulse",
-                PeriodicImpulse.create().withInterval(refreshInterval))
+        p.apply("quotaRefresh/impulse", PeriodicImpulse.create().withInterval(refreshInterval))
+            .apply("quotaRefresh/window", Window.into(FixedWindows.of(refreshInterval)))
             .apply(
                 "quotaRefresh/do",
                 new RefreshQuota(host, port, quotaId, refreshValue, refreshInterval));
@@ -189,12 +220,10 @@ public class FeaturestoreWriteSyntheaExample {
         p.apply(
                 "monitorQuota/impulse",
                 PeriodicImpulse.create().withInterval(Duration.standardSeconds(10)))
+            .apply("monitorQuota/window", Window.into(FixedWindows.of(Duration.standardSeconds(10))))
             .apply("monitorQuota/do", new MeasureQuota(projectId, host, port, quotaId));
 
-    PCollection<JsonPayload> enqueueErrors =
-        p.apply("fakeImpulse", PeriodicImpulse.create().withInterval(Duration.standardSeconds(1)))
-            .apply(
-                "fakePubsub", mapIntoVia(strings(), input -> checkStateNotNull(input).toString()))
+    PCollection<JsonPayload> enqueueErrors = data
             .apply(
                 "generateWriteRequests",
                 new GenerateWriteRequests(projectId, location, featurestoreId))
@@ -206,7 +235,8 @@ public class FeaturestoreWriteSyntheaExample {
     PCollectionTuple dequeued =
         p.apply(
                 "executeRequests/impulse",
-                PeriodicImpulse.create().withInterval(Duration.millis(750)))
+                PeriodicImpulse.create().withInterval(Duration.millis(1)))
+            .apply("executeRequests/window", Window.into(FixedWindows.of(Duration.millis(1))))
             .apply(
                 "executeRequests/dequeue",
                 new DequeueRequests<>(dequeueSuccess, host, port, queueId, decodeFn));
@@ -243,6 +273,7 @@ public class FeaturestoreWriteSyntheaExample {
 
   private abstract static class RequestResponseIOExecuteFn<RequestT, ResponseT>
       implements SerializableFunction<RequestT, ResponseT> {
+
     abstract void close();
   }
 
@@ -255,22 +286,6 @@ public class FeaturestoreWriteSyntheaExample {
     private ExecuteWriteRequestsFn(String location) {
       this.location = location;
     }
-
-    // private final static @NonNull FeaturestoreOnlineServingServiceClient CLIENT;
-    //
-    // static {
-    //   try {
-    //     CLIENT = FeaturestoreOnlineServingServiceClient.create(
-    //         FeaturestoreOnlineServingServiceSettings.create(
-    //             FeaturestoreOnlineServingServiceStubSettings.newBuilder()
-    //                 .setEndpoint("us-central1-aiplatform.googleapis.com:443")
-    //                 .build()
-    //         )
-    //     );
-    //   } catch (IOException e) {
-    //     throw new IllegalStateException(e);
-    //   }
-    // }
 
     @Override
     void close() {
@@ -307,15 +322,18 @@ public class FeaturestoreWriteSyntheaExample {
 
   private static class EncodeRequestFn
       implements SerializableFunction<WriteFeatureValuesRequest, byte[]> {
+
     @Override
     public byte[] apply(WriteFeatureValuesRequest input) {
-      return input.toByteArray();
+      return checkStateNotNull(input).toByteArray();
     }
   }
 
   private static class DequeueRequests<RequestT>
       extends PTransform<PCollection<Instant>, PCollectionTuple> {
-    private static final TupleTag<JsonPayload> ERRORS = new TupleTag<JsonPayload>() {};
+
+    private static final TupleTag<JsonPayload> ERRORS = new TupleTag<JsonPayload>() {
+    };
     private final TupleTag<RequestT> successTag;
     private final String host;
     private final int port;
@@ -345,6 +363,7 @@ public class FeaturestoreWriteSyntheaExample {
   }
 
   private static class DequeueRequestsFn<RequestT> extends RedisDoFn<Instant, RequestT> {
+
     private final DequeueRequests<RequestT> spec;
 
     private DequeueRequestsFn(DequeueRequests<RequestT> spec) {
@@ -395,6 +414,7 @@ public class FeaturestoreWriteSyntheaExample {
   }
 
   private static class EnqueueRequestsFn<RequestT> extends RedisDoFn<RequestT, JsonPayload> {
+
     private final EnqueueRequests<RequestT> spec;
 
     private EnqueueRequestsFn(EnqueueRequests<RequestT> spec) {
@@ -473,6 +493,7 @@ public class FeaturestoreWriteSyntheaExample {
 
   private static class RequestResponseFn<RequestT, ResponseT, ErrorT>
       extends RedisDoFn<RequestT, ResponseT> {
+
     private final RequestResponseIO<RequestT, ResponseT> spec;
 
     RequestResponseFn(RequestResponseIO<RequestT, ResponseT> spec) {
@@ -482,6 +503,7 @@ public class FeaturestoreWriteSyntheaExample {
 
     @ProcessElement
     public void process(@Element RequestT request, MultiOutputReceiver receiver) {
+      REQUESTS.inc();
       RedisClient safeClient = getRedisClient();
       try {
         if (!safeClient.exists(spec.quotaId)) {
@@ -495,6 +517,7 @@ public class FeaturestoreWriteSyntheaExample {
         }
         safeClient.decr(spec.quotaId);
         ResponseT response = spec.executeFn.apply(request);
+        receiver.get(spec.successTag).output(response);
         SUCCESS.inc();
       } catch (RedisClientException e) {
         FAILURE.inc();
@@ -545,7 +568,8 @@ public class FeaturestoreWriteSyntheaExample {
 
     @Override
     public void finishSpecifyingOutput(
-        String transformName, PInput input, PTransform<?, ?> transform) {}
+        String transformName, PInput input, PTransform<?, ?> transform) {
+    }
   }
 
   private static class GenerateWriteRequests
@@ -579,7 +603,6 @@ public class FeaturestoreWriteSyntheaExample {
     public void process(OutputReceiver<WriteFeatureValuesRequest> receiver) {
       List<String> ids = ImmutableList.of("a", "b", "c", "d", "e");
       Random random = new Random(Instant.now().getMillis());
-      for (int i = 0; i < 1000; i++) {
         String id = ids.get(random.nextInt(ids.size()));
         receiver.output(
             WriteFeatureValuesRequest.getDefaultInstance()
@@ -657,12 +680,6 @@ public class FeaturestoreWriteSyntheaExample {
                         .build())
                 .build());
       }
-    }
-  }
-
-  private static <InputT, OutputT> MapElements<InputT, OutputT> mapIntoVia(
-      TypeDescriptor<OutputT> type, SerializableFunction<InputT, OutputT> fn) {
-    return MapElements.into(type).via(input -> fn.apply(checkStateNotNull(input)));
   }
 
   private static class RefreshQuota
@@ -710,6 +727,7 @@ public class FeaturestoreWriteSyntheaExample {
   }
 
   private abstract static class RedisDoFn<InputT, OutputT> extends DoFn<InputT, OutputT> {
+
     private final String host;
     private final int port;
 
@@ -738,6 +756,7 @@ public class FeaturestoreWriteSyntheaExample {
   }
 
   private static class RedisClient implements Serializable {
+
     private final transient @Nonnull Jedis client;
     private final String host;
     private final int port;
@@ -814,6 +833,7 @@ public class FeaturestoreWriteSyntheaExample {
   }
 
   static class RedisClientException extends Throwable implements Serializable {
+
     private final Exception e;
     private final String source;
 
@@ -853,8 +873,10 @@ public class FeaturestoreWriteSyntheaExample {
       extends PTransform<PCollection<Instant>, PCollection<JsonPayload>> {
 
     private static final TupleTag<KV<Instant, Point>> POINTS =
-        new TupleTag<KV<Instant, Point>>() {};
-    private static final TupleTag<JsonPayload> ERRORS = new TupleTag<JsonPayload>() {};
+        new TupleTag<KV<Instant, Point>>() {
+        };
+    private static final TupleTag<JsonPayload> ERRORS = new TupleTag<JsonPayload>() {
+    };
 
     private final String projectId;
     private final String host;
@@ -961,7 +983,8 @@ public class FeaturestoreWriteSyntheaExample {
     }
 
     @ProcessElement
-    public void process(@Element Iterable<Point> element, OutputReceiver<JsonPayload> receiver) {
+    public void process(@Element Iterable<Point> element, OutputReceiver<JsonPayload> receiver)
+        throws IOException {
       List<Point> points =
           StreamSupport.stream(element.spliterator(), false).collect(Collectors.toList());
       try {
@@ -977,22 +1000,29 @@ public class FeaturestoreWriteSyntheaExample {
   }
 
   private static class MetricService implements Serializable {
+
     private static final MonitoredResource MONITORED_RESOURCE =
         MonitoredResource.newBuilder().setType("global").build();
     private static final String TYPE_PREFIX = "custom.googleapis.com";
-    private final transient @NonNull MetricServiceClient client;
+    private transient @Nullable MetricServiceClient client;
     private final ProjectName projectName;
 
     MetricService(String projectId) throws IOException {
-      client = MetricServiceClient.create();
       projectName = ProjectName.of(projectId);
+    }
+
+    @NonNull MetricServiceClient getOrInstantiate() throws IOException {
+      if (client == null) {
+        client = MetricServiceClient.create();
+      }
+      return checkStateNotNull(client);
     }
 
     Metric getMetric(String name) {
       return Metric.newBuilder().setType(String.format("%s/%s", TYPE_PREFIX, name)).build();
     }
 
-    void write(String name, List<Point> points) throws ApiException {
+    void write(String name, List<Point> points) throws ApiException, IOException {
       Metric metric = getMetric(name);
       TimeSeries timeSeries =
           TimeSeries.newBuilder()
@@ -1006,11 +1036,13 @@ public class FeaturestoreWriteSyntheaExample {
               .setName(projectName.toString())
               .addTimeSeries(timeSeries)
               .build();
-      client.createTimeSeries(request);
+      getOrInstantiate().createTimeSeries(request);
     }
 
     void close() {
-      client.close();
+      if (client != null) {
+        checkStateNotNull(client).close();
+      }
     }
   }
 
@@ -1053,6 +1085,7 @@ public class FeaturestoreWriteSyntheaExample {
   }
 
   private static class DataflowLoggerFn extends DoFn<Iterable<JsonPayload>, Void> {
+
     private final Logger spec;
     private transient @MonotonicNonNull Logging client;
 
@@ -1090,6 +1123,7 @@ public class FeaturestoreWriteSyntheaExample {
   }
 
   private static class LocalLoggerFn extends DoFn<Iterable<JsonPayload>, Void> {
+
     private static final Gson GSON = new Gson();
     private final org.slf4j.Logger logger;
     private final Logger spec;
@@ -1139,11 +1173,260 @@ public class FeaturestoreWriteSyntheaExample {
                     .setStringValue(Optional.ofNullable(e.getMessage()).orElse(""))
                     .build())
             .putFields(
-                "errorDetails",
-                Value.newBuilder().setStringValue(e.getErrorDetails().toString()).build())
-            .putFields(
-                "statusCode",
-                Value.newBuilder().setStringValue(e.getStatusCode().toString()).build())
+                "stackTrace",
+                Value.newBuilder().setStringValue(Throwables.getStackTraceAsString(e)).build()
+            )
             .build());
   }
+
+
+  private static class Medication implements Serializable {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private final String code;
+    private final Instant timestamp;
+    private final String patient;
+
+    @SuppressWarnings({"unused"})
+    static ParDo.SingleOutput<String, Medication> fromJson() {
+      return ParDo.of(new JsonToMedicationFn());
+    }
+
+    @SuppressWarnings({"unused"})
+    static MapElements<Medication, JsonPayload> toJson() {
+      return MapElements.into(TypeDescriptor.of(JsonPayload.class)).via(Medication::toJsonPayload);
+    }
+
+    Medication(String json) {
+      try {
+        JsonNode root = MAPPER.readTree(json);
+        code =
+            checkStateNotNull(
+                root.get("medicationCodeableConcept").get("coding").get(0).get("code"))
+                .asText();
+        timestamp = Instant.parse(checkStateNotNull(root.get("effectiveDateTime")).asText());
+        patient =
+            checkStateNotNull(root.get("subject").get("reference"))
+                .asText()
+                .replaceAll("urn:uuid:", "");
+
+      } catch (JsonProcessingException | IllegalStateException e) {
+        throw new IllegalStateException(e);
+      }
+    }
+
+    JsonPayload toJsonPayload() {
+      return JsonPayload.of(Struct.newBuilder()
+          .putFields("code", Value.newBuilder()
+              .setStringValue(code)
+              .build())
+          .putFields("timestamp", Value.newBuilder()
+              .setStringValue(timestamp.toString())
+              .build())
+          .putFields("patient", Value.newBuilder()
+              .setStringValue(patient)
+              .build())
+          .build());
+    }
+
+    @Override
+    public boolean equals(@Nullable Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      Medication that = (Medication) o;
+      return Objects.equal(code, that.code)
+          && Objects.equal(timestamp, that.timestamp)
+          && Objects.equal(patient, that.patient);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(code, timestamp, patient);
+    }
+  }
+
+  private static class JsonToMedicationFn extends DoFn<String, Medication> {
+
+    @ProcessElement
+    public void process(@Element String json, OutputReceiver<Medication> receiver) {
+      try {
+        receiver.output(new Medication(json));
+      } catch (IllegalStateException ignored) {
+
+      }
+    }
+  }
+
+  private static class Condition implements Serializable {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private final String code;
+    private final Instant timestamp;
+    private final String patient;
+
+    @SuppressWarnings({"unused"})
+    private static ParDo.SingleOutput<String, Condition> fromJson() {
+      return ParDo.of(new JsonToConditionFn());
+    }
+
+    @SuppressWarnings({"unused"})
+    static MapElements<Condition, JsonPayload> toJson() {
+      return MapElements.into(TypeDescriptor.of(JsonPayload.class)).via(Condition::toJsonPayload);
+    }
+
+    Condition(String json) {
+      try {
+        JsonNode root = MAPPER.readTree(json);
+        JsonNode code = checkStateNotNull(root.get("code"));
+        JsonNode coding = checkStateNotNull(code.get("coding"));
+        checkState(coding.isArray());
+        checkState(!coding.isEmpty());
+        JsonNode codingCode = checkStateNotNull(coding.get(0));
+        this.code = checkStateNotNull(codingCode.get("code")).asText();
+        this.timestamp = Instant.parse(checkStateNotNull(root.get("onsetDateTime")).asText());
+        String reference = checkStateNotNull(root.get("subject").get("reference")).asText();
+        this.patient = reference.replaceAll("urn:uuid:", "");
+      } catch (JsonProcessingException | IllegalStateException e) {
+        throw new IllegalStateException(e);
+      }
+    }
+
+    JsonPayload toJsonPayload() {
+      return JsonPayload.of(Struct.newBuilder()
+          .putFields("code", Value.newBuilder()
+              .setStringValue(code)
+              .build())
+          .putFields("timestamp", Value.newBuilder()
+              .setStringValue(timestamp.toString())
+              .build())
+          .putFields("patient", Value.newBuilder()
+              .setStringValue(patient)
+              .build())
+          .build());
+    }
+
+    @Override
+    public boolean equals(@Nullable Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      Condition condition = (Condition) o;
+      return Objects.equal(code, condition.code)
+          && Objects.equal(timestamp, condition.timestamp)
+          && Objects.equal(patient, condition.patient);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(code, timestamp, patient);
+    }
+  }
+
+  private static class JsonToConditionFn extends DoFn<String, Condition> {
+
+    @ProcessElement
+    public void process(@Element String json, OutputReceiver<Condition> receiver) {
+      try {
+        receiver.output(new Condition(json));
+      } catch (IllegalStateException ignored) {
+
+      }
+    }
+  }
+
+  private static class Observation implements Serializable {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private final String code;
+    private final Instant timestamp;
+    private final String patient;
+    private final Double value;
+
+
+    @SuppressWarnings({"unused"})
+    static ParDo.SingleOutput<String, Observation> fromJson() {
+      return ParDo.of(new JsonToObservationFn());
+    }
+
+    @SuppressWarnings({"unused"})
+    static MapElements<Observation, JsonPayload> toJson() {
+      return MapElements.into(TypeDescriptor.of(JsonPayload.class)).via(Observation::toJsonPayload);
+    }
+    Observation(String json) {
+      try {
+        JsonNode root = MAPPER.readTree(json);
+        code = checkStateNotNull(root.get("code").get("coding").get(0).get("code")).asText();
+        timestamp = Instant.parse(checkStateNotNull(root.get("effectiveDateTime")).asText());
+        patient =
+            checkStateNotNull(root.get("subject").get("reference"))
+                .asText()
+                .replaceAll("urn:uuid:", "");
+
+        double value = 0.0;
+        if (root.has("valueQuantity") && root.get("valueQuantity").has("value")) {
+          value = checkStateNotNull(root.get("valueQuantity").get("value")).asDouble();
+        }
+        this.value = value;
+      } catch (JsonProcessingException | IllegalStateException e) {
+        throw new IllegalStateException(e);
+      }
+    }
+
+    JsonPayload toJsonPayload() {
+      return JsonPayload.of(Struct.newBuilder()
+          .putFields("code", Value.newBuilder()
+              .setStringValue(code)
+              .build())
+          .putFields("timestamp", Value.newBuilder()
+              .setStringValue(timestamp.toString())
+              .build())
+          .putFields("patient", Value.newBuilder()
+              .setStringValue(patient)
+              .build())
+          .putFields("value", Value.newBuilder()
+              .setNumberValue(value)
+              .build())
+          .build());
+    }
+
+    @Override
+    public boolean equals(@Nullable Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      Observation that = (Observation) o;
+      return Objects.equal(code, that.code)
+          && Objects.equal(timestamp, that.timestamp)
+          && Objects.equal(patient, that.patient)
+          && Objects.equal(value, that.value);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(code, timestamp, patient, value);
+    }
+  }
+
+  private static class JsonToObservationFn extends DoFn<String, Observation> {
+
+    @ProcessElement
+    public void process(@Element String json, OutputReceiver<Observation> receiver) {
+      try {
+        receiver.output(new Observation(json));
+      } catch (IllegalStateException ignored) {
+
+      }
+    }
+  }
+
 }
