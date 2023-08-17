@@ -54,8 +54,10 @@ configurations.sparkRunnerPreCommit {
 dependencies {
   implementation enforcedPlatform(library.java.google_cloud_platform_libraries_bom)
   implementation "com.google.cloud:google-cloud-aiplatform"
+  implementation "com.google.cloud:google-cloud-bigquery"
   implementation "com.google.cloud:google-cloud-logging"
   implementation "com.google.cloud:google-cloud-monitoring"
+  implementation "com.google.cloud:google-cloud-spanner"
   implementation library.java.vendored_guava_32_1_2_jre
   implementation library.java.kafka_clients
   implementation project(path: ":sdks:java:core", configuration: "shadow")
