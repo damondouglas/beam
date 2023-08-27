@@ -22,11 +22,13 @@ import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransfor
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.getFilenameSuffix;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.getNumShards;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.getShardNameTemplate;
+import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.isZeroValue;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.RESULT_TAG;
 import static org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.Preconditions.checkState;
 
 import com.google.auto.service.AutoService;
 import java.util.Optional;
+import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.WriteFilesResult;
 import org.apache.beam.sdk.io.csv.CsvIO;
 import org.apache.beam.sdk.schemas.Schema;
@@ -42,8 +44,6 @@ import org.apache.commons.csv.CSVFormat;
 @AutoService(FileWriteSchemaTransformFormatProvider.class)
 public class CsvWriteSchemaTransformFormatProvider
     implements FileWriteSchemaTransformFormatProvider {
-
-  final String suffix = String.format(".%s", CSV);
 
   @Override
   public String identifier() {
@@ -61,27 +61,19 @@ public class CsvWriteSchemaTransformFormatProvider
             getCSVConfiguration(configuration);
         CSVFormat csvFormat =
             CSVFormat.Predefined.valueOf(csvConfiguration.getPredefinedCsvFormat()).getFormat();
+
         CsvIO.Write<Row> write =
-            CsvIO.writeRows(configuration.getFilenamePrefix(), csvFormat).withSuffix(suffix);
+            CsvIO.writeRows(configuration.getFilenamePrefix(), csvFormat)
+                .withCompression(getCompression(configuration, Compression.UNCOMPRESSED))
+                .withSuffix(getFilenameSuffix(configuration));
 
-        if (configuration.getCompression() != null) {
-          write = write.withCompression(getCompression(configuration));
-        }
-
-        if (configuration.getNumShards() != null) {
+        if (!isZeroValue(configuration.getNumShards())) {
           int numShards = getNumShards(configuration);
-          // Python SDK external transforms do not support null values requiring additional check.
-          if (numShards > 0) {
-            write = write.withNumShards(numShards);
-          }
+          write = write.withNumShards(numShards);
         }
 
         if (!Strings.isNullOrEmpty(configuration.getShardNameTemplate())) {
           write = write.withShardTemplate(getShardNameTemplate(configuration));
-        }
-
-        if (!Strings.isNullOrEmpty(configuration.getFilenameSuffix())) {
-          write = write.withSuffix(getFilenameSuffix(configuration));
         }
 
         WriteFilesResult<String> result = input.apply("Row to CSV", write);

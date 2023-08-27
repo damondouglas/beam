@@ -69,6 +69,9 @@ var (
 	ExpansionTimeout = flag.Duration("expansion_timeout", 0,
 		"Sets an auto-shutdown timeout to any started expansion services. "+
 			"Requires the timeout command to be present in Path, unless the value is set to 0.")
+
+	StorageBucket = flag.String("gcs_bucket", "",
+		"Name of the Google Cloud Storage Bucket for use in various tests.")
 )
 
 func init() {

@@ -58,7 +58,7 @@ public class ParquetWriteSchemaTransformFormatProviderTest
 
   @Override
   protected String getFilenamePrefix() {
-    return "";
+    return "out";
   }
 
   @Override
@@ -87,7 +87,7 @@ public class ParquetWriteSchemaTransformFormatProviderTest
                 .setCompressionCodecName(CompressionCodecName.GZIP.name())
                 .build())
         .setFormat(getFormat())
-        .setFilenamePrefix(folder + getFilenamePrefix())
+        .setFilenamePrefix(folder + "/" + getFilenamePrefix())
         .build();
   }
 

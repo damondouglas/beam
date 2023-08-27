@@ -59,7 +59,7 @@ public class AvroWriteSchemaTransformFormatProviderTest
 
   @Override
   protected String getFilenamePrefix() {
-    return "/";
+    return "out";
   }
 
   @Override
@@ -73,7 +73,9 @@ public class AvroWriteSchemaTransformFormatProviderTest
 
     PCollection<GenericRecord> actual =
         readPipeline
-            .apply(AvroIO.readGenericRecords(avroSchema).from(folder + getFilenamePrefix() + "*"))
+            .apply(
+                AvroIO.readGenericRecords(avroSchema)
+                    .from(folder + "/" + getFilenamePrefix() + "*"))
             .setCoder(coder);
 
     PAssert.that(actual).containsInAnyOrder(expected);

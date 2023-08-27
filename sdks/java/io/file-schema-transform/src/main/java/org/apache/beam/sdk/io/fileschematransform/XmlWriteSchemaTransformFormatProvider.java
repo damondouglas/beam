@@ -18,7 +18,7 @@
 package org.apache.beam.sdk.io.fileschematransform;
 
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.XML;
-import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.applyCommonFileIOWriteFeatures;
+import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.buildFileWrite;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.ERROR_SCHEMA;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.ERROR_TAG;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.RESULT_TAG;
@@ -49,7 +49,6 @@ import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.Strings;
 public class XmlWriteSchemaTransformFormatProvider
     implements FileWriteSchemaTransformFormatProvider {
 
-  private static final String SUFFIX = String.format(".%s", XML);
   static final TupleTag<XmlRowAdapter> ERROR_FN_OUPUT_TAG = new TupleTag<XmlRowAdapter>() {};
 
   @Override
@@ -90,13 +89,7 @@ public class XmlWriteSchemaTransformFormatProvider
                 .withCharset(charset)
                 .withRootElement(xmlConfig.getRootElement());
 
-        FileIO.Write<Void, XmlRowAdapter> write =
-            FileIO.<XmlRowAdapter>write()
-                .to(configuration.getFilenamePrefix())
-                .via(sink)
-                .withSuffix(SUFFIX);
-
-        write = applyCommonFileIOWriteFeatures(write, configuration);
+        FileIO.Write<Void, XmlRowAdapter> write = buildFileWrite(sink, configuration);
 
         PCollection<String> output =
             xml.get(ERROR_FN_OUPUT_TAG)

@@ -67,12 +67,13 @@ public class CsvWriteSchemaTransformFormatProviderTest
 
   @Override
   protected String getFilenamePrefix() {
-    return "/out";
+    return "out";
   }
 
   @Override
   protected void assertFolderContainsInAnyOrder(String folder, List<Row> rows, Schema beamSchema) {
-    PCollection<String> actual = readPipeline.apply(TextIO.read().from(folder + "*"));
+    PCollection<String> actual =
+        readPipeline.apply(TextIO.read().from(folder + "/" + getFilenamePrefix() + "*"));
     CSVFormat csvFormat =
         CSVFormat.Predefined.valueOf(
                 requireNonNull(buildConfiguration(folder).getCsvConfiguration())

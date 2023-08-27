@@ -19,9 +19,11 @@ package org.apache.beam.sdk.io.fileschematransform;
 
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.getNumShards;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.getShardNameTemplate;
+import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.isZeroValue;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.ERROR_SCHEMA;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.ERROR_TAG;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.RESULT_TAG;
+import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 
 import com.google.auto.service.AutoService;
 import org.apache.avro.generic.GenericRecord;
@@ -45,6 +47,8 @@ import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.Strings;
 public class AvroWriteSchemaTransformFormatProvider
     implements FileWriteSchemaTransformFormatProvider {
   static final TupleTag<GenericRecord> ERROR_FN_OUPUT_TAG = new TupleTag<GenericRecord>() {};
+
+  private static final String DEFAULT_AVRO_SUFFIX = "avro";
 
   @Override
   public String identifier() {
@@ -79,15 +83,25 @@ public class AvroWriteSchemaTransformFormatProvider
 
         PCollection<GenericRecord> avro = tuple.get(ERROR_FN_OUPUT_TAG).setCoder(coder);
 
-        AvroIO.Write<GenericRecord> write =
-            AvroIO.writeGenericRecords(avroSchema).to(configuration.getFilenamePrefix());
+        String suffix = DEFAULT_AVRO_SUFFIX;
+        if (!Strings.isNullOrEmpty(configuration.getFilenameSuffix())) {
+          suffix = configuration.getFilenameSuffix();
+        }
 
-        if (configuration.getNumShards() != null) {
+        String safeSuffix = checkStateNotNull(suffix, "suffix is null");
+
+        if (!safeSuffix.matches("^\\.")) {
+          safeSuffix = "." + safeSuffix;
+        }
+
+        AvroIO.Write<GenericRecord> write =
+            AvroIO.writeGenericRecords(avroSchema)
+                .to(configuration.getFilenamePrefix())
+                .withSuffix(safeSuffix);
+
+        if (!isZeroValue(configuration.getNumShards())) {
           int numShards = getNumShards(configuration);
-          // Python SDK external transforms do not support null values requiring additional check.
-          if (numShards > 0) {
-            write = write.withNumShards(numShards);
-          }
+          write = write.withNumShards(numShards);
         }
 
         if (!Strings.isNullOrEmpty(configuration.getShardNameTemplate())) {

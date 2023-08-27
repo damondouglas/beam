@@ -17,7 +17,7 @@
  */
 package org.apache.beam.sdk.io.fileschematransform;
 
-import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.applyCommonFileIOWriteFeatures;
+import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformFormatProviders.buildFileWrite;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.ERROR_SCHEMA;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.ERROR_TAG;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.RESULT_TAG;
@@ -48,9 +48,6 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 public class ParquetWriteSchemaTransformFormatProvider
     implements FileWriteSchemaTransformFormatProvider {
 
-  private static final String SUFFIX =
-      String.format(".%s", FileWriteSchemaTransformFormatProviders.PARQUET);
-
   static final TupleTag<GenericRecord> ERROR_FN_OUPUT_TAG = new TupleTag<GenericRecord>() {};
 
   @Override
@@ -73,12 +70,7 @@ public class ParquetWriteSchemaTransformFormatProvider
         AvroCoder<GenericRecord> coder = AvroCoder.of(avroSchema);
 
         FileIO.Write<Void, GenericRecord> write =
-            FileIO.<GenericRecord>write()
-                .to(configuration.getFilenamePrefix())
-                .via(buildSink(parquetConfiguration(configuration), schema))
-                .withSuffix(SUFFIX);
-
-        write = applyCommonFileIOWriteFeatures(write, configuration);
+            buildFileWrite(buildSink(parquetConfiguration(configuration), schema), configuration);
 
         PCollectionTuple parquet =
             input.apply(

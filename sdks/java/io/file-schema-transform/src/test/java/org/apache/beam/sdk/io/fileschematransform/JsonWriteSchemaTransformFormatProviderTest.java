@@ -57,12 +57,13 @@ public class JsonWriteSchemaTransformFormatProviderTest
 
   @Override
   protected String getFilenamePrefix() {
-    return "/out";
+    return "out";
   }
 
   @Override
   protected void assertFolderContainsInAnyOrder(String folder, List<Row> rows, Schema beamSchema) {
-    PCollection<String> actual = readPipeline.apply(TextIO.read().from(folder + "*"));
+    PCollection<String> actual =
+        readPipeline.apply(TextIO.read().from(folder + "/" + getFilenamePrefix() + "*"));
 
     PayloadSerializer payloadSerializer =
         new JsonPayloadSerializerProvider().getSerializer(beamSchema, ImmutableMap.of());

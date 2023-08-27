@@ -73,10 +73,7 @@ abstract class FileWriteSchemaTransformFormatProviderTest {
    */
   protected abstract String getFormat();
 
-  /**
-   * The filename prefix of sharded files, required by {@link org.apache.beam.sdk.io.TextIO.Write}
-   * based {@link FileWriteSchemaTransformFormatProvider}s.
-   */
+  /** The filename prefix of sharded files. */
   protected abstract String getFilenamePrefix();
 
   /**
@@ -442,7 +439,7 @@ abstract class FileWriteSchemaTransformFormatProviderTest {
 
   private String folder(String... paths) {
     try {
-      return tmpFolder.newFolder(paths).getAbsolutePath() + getFilenamePrefix();
+      return tmpFolder.newFolder(paths).getAbsolutePath();
     } catch (IOException e) {
       throw new IllegalStateException(e);
     }
@@ -466,7 +463,7 @@ abstract class FileWriteSchemaTransformFormatProviderTest {
   protected FileWriteSchemaTransformConfiguration defaultConfiguration(String folder) {
     return FileWriteSchemaTransformConfiguration.builder()
         .setFormat(getFormat())
-        .setFilenamePrefix(folder)
+        .setFilenamePrefix(folder + "/" + getFilenamePrefix())
         .build();
   }
 }

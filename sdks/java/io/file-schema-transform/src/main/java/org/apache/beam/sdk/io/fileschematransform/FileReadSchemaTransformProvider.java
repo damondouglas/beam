@@ -60,7 +60,7 @@ import org.slf4j.LoggerFactory;
 public class FileReadSchemaTransformProvider
     extends TypedSchemaTransformProvider<FileReadSchemaTransformConfiguration> {
   private static final Logger LOG = LoggerFactory.getLogger(FileReadSchemaTransformProvider.class);
-  private static final String IDENTIFIER = "beam:schematransform:org.apache.beam:file_read:v1";
+  static final String IDENTIFIER = "beam:schematransform:org.apache.beam:file_read:v1";
   static final String INPUT_TAG = "input";
   static final String OUTPUT_TAG = "output";
   static final String FILEPATTERN_ROW_FIELD_NAME = "filepattern";

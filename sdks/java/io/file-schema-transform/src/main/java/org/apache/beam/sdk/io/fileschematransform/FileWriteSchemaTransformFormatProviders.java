@@ -19,17 +19,18 @@ package org.apache.beam.sdk.io.fileschematransform;
 
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.ERROR_SCHEMA;
 import static org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformProvider.ERROR_TAG;
-import static org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.Preconditions.checkState;
+import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.annotations.Internal;
 import org.apache.beam.sdk.extensions.avro.schemas.utils.AvroUtils;
 import org.apache.beam.sdk.io.Compression;
+import org.apache.beam.sdk.io.FileBasedSink;
 import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.TextIO;
+import org.apache.beam.sdk.io.fs.ResourceId;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.schemas.Schema;
@@ -41,6 +42,8 @@ import org.apache.beam.sdk.values.Row;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.Strings;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +57,7 @@ import org.slf4j.LoggerFactory;
  */
 @Internal
 public final class FileWriteSchemaTransformFormatProviders {
+
   static final String AVRO = "avro";
   static final String CSV = "csv";
   static final String JSON = "json";
@@ -120,23 +124,34 @@ public final class FileWriteSchemaTransformFormatProviders {
    * Applies common parameters from {@link FileWriteSchemaTransformConfiguration} to {@link
    * FileIO.Write}.
    */
-  static <T> FileIO.Write<Void, T> applyCommonFileIOWriteFeatures(
-      FileIO.Write<Void, T> write, FileWriteSchemaTransformConfiguration configuration) {
+  static <T> FileIO.Write<Void, T> buildFileWrite(
+      FileIO.Sink<T> sink, FileWriteSchemaTransformConfiguration configuration) {
 
+    String suffix = "." + configuration.getFormat();
     if (!Strings.isNullOrEmpty(configuration.getFilenameSuffix())) {
-      write = write.withSuffix(getFilenameSuffix(configuration));
+      suffix = checkStateNotNull(configuration.getFilenameSuffix());
     }
 
-    if (configuration.getNumShards() != null) {
+    ResourceId resourceId =
+        FileBasedSink.convertToFileResourceIfPossible(configuration.getFilenamePrefix());
+
+    String to = resourceId.getCurrentDirectory().toString();
+
+    String prefix = "output";
+    if (!(resourceId.isDirectory() && Strings.isNullOrEmpty(resourceId.getFilename()))) {
+      prefix = checkStateNotNull(resourceId.getFilename());
+    }
+
+    FileIO.Write<Void, T> write =
+        FileIO.<T>write().to(to).withPrefix(prefix).withSuffix(suffix).via(sink);
+
+    if (!isZeroValue(configuration.getNumShards())) {
       int numShards = getNumShards(configuration);
-      // Python SDK external transforms do not support null values requiring additional check.
-      if (numShards > 0) {
-        write = write.withNumShards(numShards);
-      }
+      write = write.withNumShards(numShards);
     }
 
     if (!Strings.isNullOrEmpty(configuration.getCompression())) {
-      write = write.withCompression(getCompression(configuration));
+      write = write.withCompression(getCompression(configuration, Compression.UNCOMPRESSED));
     }
 
     return write;
@@ -155,15 +170,12 @@ public final class FileWriteSchemaTransformFormatProviders {
     }
 
     if (!Strings.isNullOrEmpty(configuration.getCompression())) {
-      write = write.withCompression(getCompression(configuration));
+      write = write.withCompression(getCompression(configuration, Compression.UNCOMPRESSED));
     }
 
-    if (configuration.getNumShards() != null) {
+    if (!isZeroValue(configuration.getNumShards())) {
       int numShards = getNumShards(configuration);
-      // Python SDK external transforms do not support null values requiring additional check.
-      if (numShards > 0) {
-        write = write.withNumShards(numShards);
-      }
+      write = write.withNumShards(numShards);
     }
 
     if (!Strings.isNullOrEmpty(configuration.getShardNameTemplate())) {
@@ -173,31 +185,55 @@ public final class FileWriteSchemaTransformFormatProviders {
     return write;
   }
 
-  static Compression getCompression(FileWriteSchemaTransformConfiguration configuration) {
-    // resolves Checker Framework incompatible argument for valueOf parameter
-    Optional<String> compression = Optional.ofNullable(configuration.getCompression());
-    checkState(compression.isPresent());
-    return Compression.valueOf(compression.get());
+  /**
+   * Resolves Checker Framework incompatible argument for valueOf parameter. Defaults to
+   * defaultValue when {@code Strings.isNullOrEmpty(configuration.getCompression())}.
+   */
+  static @NonNull Compression getCompression(
+      FileWriteSchemaTransformConfiguration configuration, @NonNull Compression defaultValue) {
+    if (Strings.isNullOrEmpty(configuration.getCompression())) {
+      return defaultValue;
+    }
+    String safeCompressionValue = checkStateNotNull(configuration.getCompression());
+    try {
+      return Compression.valueOf(safeCompressionValue);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(String.format("%s: %s", e, safeCompressionValue));
+    }
   }
 
-  static String getFilenameSuffix(FileWriteSchemaTransformConfiguration configuration) {
-    // resolves Checker Framework incompatible argument for parameter suffix of withSuffix
-    Optional<String> suffix = Optional.ofNullable(configuration.getFilenameSuffix());
-    checkState(suffix.isPresent());
-    return suffix.get();
+  /**
+   * Resolves Checker Framework incompatible argument for parameter suffix of withSuffix. Defaults
+   * to {@code "." + configuration.getFormat()} when {@link
+   * FileWriteSchemaTransformConfiguration#getFilenameSuffix()} is null or empty.
+   */
+  static @NonNull String getFilenameSuffix(FileWriteSchemaTransformConfiguration configuration) {
+    if (Strings.isNullOrEmpty(configuration.getFilenameSuffix())) {
+      return "." + configuration.getFormat();
+    }
+    return checkStateNotNull(configuration.getFilenameSuffix());
   }
 
-  static Integer getNumShards(FileWriteSchemaTransformConfiguration configuration) {
-    // resolves Checker Framework unboxing a possibly-null reference
-    Optional<Integer> numShards = Optional.ofNullable(configuration.getNumShards());
-    checkState(numShards.isPresent());
-    return numShards.get();
+  static boolean isZeroValue(@Nullable Integer value) {
+    if (value == null) {
+      return true;
+    }
+    return value.equals(0);
   }
 
-  static String getShardNameTemplate(FileWriteSchemaTransformConfiguration configuration) {
-    // resolves Checker Framework incompatible null argument for parameter shardTemplate
-    Optional<String> shardNameTemplate = Optional.ofNullable(configuration.getShardNameTemplate());
-    checkState(shardNameTemplate.isPresent());
-    return shardNameTemplate.get();
+  /**
+   * Resolves Checker Framework unboxing a possibly-null reference with {@code
+   * configuration.getNumShards()}.
+   */
+  static @NonNull Integer getNumShards(FileWriteSchemaTransformConfiguration configuration) {
+    return checkStateNotNull(configuration.getNumShards());
+  }
+
+  /**
+   * Resolves Checker Framework incompatible null argument for {@code
+   * configuration.getShardNameTemplate()}.
+   */
+  static @NonNull String getShardNameTemplate(FileWriteSchemaTransformConfiguration configuration) {
+    return checkStateNotNull(configuration.getShardNameTemplate());
   }
 }

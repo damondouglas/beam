@@ -93,7 +93,7 @@ public class XmlWriteSchemaTransformFormatProviderTest
             FileWriteSchemaTransformConfiguration.xmlConfigurationBuilder()
                 .setRootElement(ROOT_ELEMENT)
                 .build())
-        .setFilenamePrefix(folder)
+        .setFilenamePrefix(folder + "/" + getFilenamePrefix())
         .setNumShards(1)
         .build();
   }

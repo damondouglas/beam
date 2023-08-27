@@ -57,7 +57,7 @@ public class FileWriteSchemaTransformProvider
   public static final Schema ERROR_SCHEMA =
       Schema.builder().addStringField("error").addNullableByteArrayField("row").build();
 
-  private static final String IDENTIFIER = "beam:schematransform:org.apache.beam:file_write:v1";
+  static final String IDENTIFIER = "beam:schematransform:org.apache.beam:file_write:v1";
   static final String INPUT_TAG = "input";
   static final String OUTPUT_TAG = "output";
   static final String ERROR_STRING = "error";

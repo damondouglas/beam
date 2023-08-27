@@ -65,7 +65,8 @@ public abstract class FileWriteSchemaTransformConfiguration {
   @Nullable
   public abstract String getCompression();
 
-  @SchemaFieldDescription("The number of output shards produced; a value of 1 disables sharding.")
+  @SchemaFieldDescription(
+      "The number of output shards produced; a value of 1 disables sharding and 0 converts to null for languages like go that send zero values.")
   @Nullable
   public abstract Integer getNumShards();
 
