@@ -21,30 +21,22 @@ package fileio
 import (
 	"fmt"
 	"github.com/apache/beam/sdks/v2/go/pkg/beam"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/runtime/xlangx"
 	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/typex"
-	"github.com/apache/beam/sdks/v2/go/pkg/beam/internal/errors"
 	"reflect"
 )
 
 const (
-	inputRowTupleTag  = "input"
-	outputRowTupleTag = "output"
-	expansionUri      = "beam:schematransform:org.apache.beam:file_write:v1"
+	inputRowTupleTag    = "input"
+	outputRowTupleTag   = "output"
+	writeURN            = "beam:schematransform:org.apache.beam:file_write:v1"
+	serviceGradleTarget = ":sdks:java:io:file-schema-transform:expansion-service:runExpansionService"
 
-	// FormatAvro configures writing files in AVRO format.
-	FormatAvro Format = "avro"
-
-	// FormatCsv configures writing files in CSV format.
-	FormatCsv Format = "csv"
-
-	// FormatJson configures writing files in JSON format.
-	FormatJson Format = "json"
-
-	// FormatParquet configures writing files in Parquet format.
-	FormatParquet Format = "parquet"
-
-	// FormatXml configures writing files in XML format.
-	FormatXml Format = "xml"
+	formatAvro    = "avro"
+	formatCsv     = "csv"
+	formatJson    = "json"
+	formatParquet = "parquet"
+	formatXml     = "xml"
 
 	// CompressionAuto configures an automatic determination of the compression type based on filename extension.
 	CompressionAuto Compression = "AUTO"
@@ -124,16 +116,16 @@ const (
 	// See https://commons.apache.org/proper/commons-csv/apidocs/org/apache/commons/csv/CSVFormat.Predefined.html#TDF
 	PredefinedCsvFormatTDF PredefinedCsvFormat = "TDF"
 
-	// ParquetCompressionGzip configures a FormatParquet gzip format.
+	// ParquetCompressionGzip configures a formatParquet gzip format.
 	ParquetCompressionGzip ParquetCompression = "GZIP"
 
-	// ParquetCompressionLzo configures a FormatParquet lzo format.
+	// ParquetCompressionLzo configures a formatParquet lzo format.
 	ParquetCompressionLzo ParquetCompression = "LZO"
 
-	// ParquetCompressionSnappy configures a FormatParquet using Google Snappy compression.
+	// ParquetCompressionSnappy configures a formatParquet using Google Snappy compression.
 	ParquetCompressionSnappy ParquetCompression = "SNAPPY"
 
-	// ParquetCompressionUncompressed configures a FormatParquet without compression.
+	// ParquetCompressionUncompressed configures a formatParquet without compression.
 	ParquetCompressionUncompressed ParquetCompression = "UNCOMPRESSED"
 
 	XmlCharsetUsAscii  XmlCharset = "US-ASCII"
@@ -144,34 +136,161 @@ const (
 	XmlCharsetUTF16LE  XmlCharset = "UTF-16LE"
 )
 
-// Format of the target files.
-type Format string
+var autoStartupAddress = xlangx.UseAutomatedJavaExpansionService(serviceGradleTarget)
 
-// Compression type for the target files.
+// WriteOption applies additional configuration details to a file write transform.
+type WriteOption interface {
+	apply(configuration *writeConfiguration)
+}
+
+// Compression type for the target files. Compression is also a WriteOption.
 type Compression string
+
+func (opt Compression) apply(configuration *writeConfiguration) {
+	configuration.Compression = opt
+}
 
 // PredefinedCsvFormat defines expected CSV formats based on the Apache Creative Commons CSV project.
 // See https://commons.apache.org/proper/commons-csv/apidocs/org/apache/commons/csv/CSVFormat.Predefined.html.
 type PredefinedCsvFormat string
 
-// ParquetCompression defines the FormatParquet compression codec.
+// ParquetCompression defines the formatParquet compression codec.
 type ParquetCompression string
 
-// XmlCharset defines the FormatXml that maps to java.nio.charset.Charset; required by underlying XmlIO.Write.
+// XmlCharset defines the formatXml that maps to java.nio.charset.Charset; required by underlying XmlIO.write.
 type XmlCharset string
 
-// WriteResult is the output from Write that stores the resulting file name written to the filesystem.
+// WriteResult is the output from write that stores the resulting file name written to the filesystem.
 type WriteResult struct {
 	FileName string `beam:"fileName"`
 }
 
-// WriteConfiguration configures a struct-based DoFn that writes to a file or object system.
-// WriteConfiguration is based on org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformConfiguration.
-// See https://beam.apache.org/releases/javadoc/current/org/apache/beam/sdk/io/fileschematransform/FileWriteSchemaTransformConfiguration.html
-type WriteConfiguration struct {
+func WithNumShards(v int32) WriteOption {
+	return numShardsOpt(v)
+}
 
-	// Format (required) of the target file or object system. See available const values such as FormatAvro, FormatJson, etc.
-	Format Format `beam:"format"`
+func WithShardNameTemplate(v string) WriteOption {
+	return shardNameTemplateOpt(v)
+}
+
+// WithWriteExpansionAddr configures a file write transform using an expansion host at addr.
+func WithWriteExpansionAddr(addr string) WriteOption {
+	return writeExpansionServiceAddrOpt(addr)
+}
+
+// WriteAvro an input beam.PCollection with files sharing a filenamePrefix. No WithWriteExpansionAddr defaults to an
+// automatic expansion service execution. File extensions defaults to avro.
+func WriteAvro(s beam.Scope, filenamePrefix string, input beam.PCollection, opts ...WriteOption) (beam.PCollection, error) {
+	config := &writeConfiguration{
+		Format:         formatAvro,
+		FilenamePrefix: filenamePrefix,
+	}
+	output, err := tryWrite(s, config, input, opts...)
+	if err != nil {
+		return beam.PCollection{}, err
+	}
+	return output[outputRowTupleTag], nil
+}
+
+// WriteCsv an input beam.PCollection with files sharing a filenamePrefix. No WithWriteExpansionAddr defaults to an
+// automatic expansion service execution. WriteCsv requires additional CsvWrite details.
+// File extensions defaults to csv.
+func WriteCsv(s beam.Scope, filenamePrefix string, config *CsvWrite, input beam.PCollection, opts ...WriteOption) (beam.PCollection, error) {
+	c := &writeConfiguration{
+		Format:           formatCsv,
+		FilenamePrefix:   filenamePrefix,
+		CsvConfiguration: config,
+	}
+	output, err := tryWrite(s, c, input, opts...)
+	if err != nil {
+		return beam.Impulse(s), err
+	}
+	return output[outputRowTupleTag], nil
+}
+
+// WriteJson an input beam.PCollection with files sharing a filenamePrefix. No WithWriteExpansionAddr defaults to an
+// automatic expansion service execution.
+// File extensions default to json.
+func WriteJson(s beam.Scope, filenamePrefix string, input beam.PCollection, opts ...WriteOption) (beam.PCollection, error) {
+	config := &writeConfiguration{
+		Format:         formatJson,
+		FilenamePrefix: filenamePrefix,
+	}
+	output, err := tryWrite(s, config, input, opts...)
+	if err != nil {
+		return beam.Impulse(s), err
+	}
+	return output[outputRowTupleTag], nil
+}
+
+// WriteParquet an input beam.PCollection with files sharing a filenamePrefix. No WithWriteExpansionAddr defaults to an
+// automatic expansion service execution. WriteParquet requires additional ParquetWrite details.
+// File extensions default to parquet.
+func WriteParquet(s beam.Scope, filenamePrefix string, config *ParquetWrite, input beam.PCollection, opts ...WriteOption) (beam.PCollection, error) {
+	c := &writeConfiguration{
+		Format:               formatParquet,
+		FilenamePrefix:       filenamePrefix,
+		ParquetConfiguration: config,
+	}
+	output, err := tryWrite(s, c, input, opts...)
+	if err != nil {
+		return beam.Impulse(s), err
+	}
+	return output[outputRowTupleTag], nil
+}
+
+// WriteXml an input beam.PCollection with files sharing a filenamePrefix. No WithWriteExpansionAddr defaults to an
+// automatic expansion service execution. WriteXml requires additional XmlWrite details.
+// Files' extension defaults to xml.
+func WriteXml(s beam.Scope, filenamePrefix string, config *XmlWrite, input beam.PCollection, opts ...WriteOption) (beam.PCollection, error) {
+	c := &writeConfiguration{
+		Format:           formatXml,
+		FilenamePrefix:   filenamePrefix,
+		XmlConfiguration: config,
+	}
+	output, err := tryWrite(s, c, input, opts...)
+	if err != nil {
+		return beam.Impulse(s), err
+	}
+	return output[outputRowTupleTag], nil
+}
+
+type numShardsOpt int32
+
+func (opt numShardsOpt) apply(configuration *writeConfiguration) {
+	configuration.NumShards = int32(opt)
+}
+
+type shardNameTemplateOpt string
+
+func (opt shardNameTemplateOpt) apply(configuration *writeConfiguration) {
+	configuration.ShardNameTemplate = string(opt)
+}
+
+func WithFilenameSuffix(v string) WriteOption {
+	return filenameSuffixOpt(v)
+}
+
+type filenameSuffixOpt string
+
+func (opt filenameSuffixOpt) apply(configuration *writeConfiguration) {
+	configuration.FilenameSuffix = string(opt)
+}
+
+type writeExpansionServiceAddrOpt string
+
+func (opt writeExpansionServiceAddrOpt) apply(configuration *writeConfiguration) {
+	configuration.expansionAddress = string(opt)
+}
+
+// writeConfiguration configures a struct-based DoFn that writes to a file or object system.
+// writeConfiguration is based on org.apache.beam.sdk.io.fileschematransform.FileWriteSchemaTransformConfiguration.
+// See https://beam.apache.org/releases/javadoc/current/org/apache/beam/sdk/io/fileschematransform/FileWriteSchemaTransformConfiguration.html
+type writeConfiguration struct {
+	expansionAddress string
+
+	// Format (required) of the target file or object system. See available const values such as formatAvro, formatJson, etc.
+	Format string `beam:"format"`
 
 	// FilenamePrefix (required) is a common prefix to use for all generated filenames.
 	FilenamePrefix string `beam:"filenamePrefix"`
@@ -191,39 +310,38 @@ type WriteConfiguration struct {
 	// FilenameSuffix (optional) configures the filename suffix for written files; defaults to Format.
 	FilenameSuffix string `beam:"filenameSuffix"`
 
-	// CsvConfiguration (required if FormatCsv) provides additional details related to writing CSV formatted files.
+	// CsvConfiguration (required if formatCsv) provides additional details related to writing CSV formatted files.
 	CsvConfiguration *CsvWrite `beam:"csvConfiguration"`
 
-	// ParquetConfiguration (required if FormatParquet) provides additional details related to writing Parquet formatted files.
+	// ParquetConfiguration (required if formatParquet) provides additional details related to writing Parquet formatted files.
 	ParquetConfiguration *ParquetWrite `beam:"parquetConfiguration"`
 
-	// XMLConfiguration (required if FormatXml) provides additional details related to writing XML formatted files.
+	// XMLConfiguration (required if formatXml) provides additional details related to writing XML formatted files.
 	XmlConfiguration *XmlWrite `beam:"xmlConfiguration"`
 }
 
-func (configuration *WriteConfiguration) isValidErr() error {
-
-	// check incompatible Format with extra configuration details
+func (configuration writeConfiguration) isValidErr() error {
+	// check incompatible format with extra configuration details
 	format := "invalid configuration: format: %s incompatible with non-nil %T"
-	if configuration.Format != FormatCsv && configuration.CsvConfiguration != nil {
+	if configuration.Format != formatCsv && configuration.CsvConfiguration != nil {
 		return fmt.Errorf(format, configuration.Format, configuration.CsvConfiguration)
 	}
-	if configuration.Format != FormatParquet && configuration.ParquetConfiguration != nil {
+	if configuration.Format != formatParquet && configuration.ParquetConfiguration != nil {
 		return fmt.Errorf(format, configuration.Format, configuration.ParquetConfiguration)
 	}
-	if configuration.Format != FormatXml && configuration.XmlConfiguration != nil {
+	if configuration.Format != formatXml && configuration.XmlConfiguration != nil {
 		return fmt.Errorf(format, configuration.Format, configuration.XmlConfiguration)
 	}
 
-	// check Format with required extra configuration details
+	// check format with required extra configuration details
 	format = "invalid configuration: format: %s requires a non-nil %T"
-	if configuration.Format == FormatCsv && configuration.CsvConfiguration == nil {
+	if configuration.Format == formatCsv && configuration.CsvConfiguration == nil {
 		return fmt.Errorf(format, configuration.Format, configuration.CsvConfiguration)
 	}
-	if configuration.Format == FormatParquet && configuration.ParquetConfiguration == nil {
+	if configuration.Format == formatParquet && configuration.ParquetConfiguration == nil {
 		return fmt.Errorf(format, configuration.Format, configuration.ParquetConfiguration)
 	}
-	if configuration.Format == FormatXml && configuration.XmlConfiguration == nil {
+	if configuration.Format == formatXml && configuration.XmlConfiguration == nil {
 		return fmt.Errorf(format, configuration.Format, configuration.XmlConfiguration)
 	}
 	return nil
@@ -258,20 +376,20 @@ type XmlWrite struct {
 	Charset XmlCharset `beam:"charset"`
 }
 
-// Write an input beam.PCollection to file or object systems, configured by a WriteConfiguration that calls a
-// beam.CrossLanguage PTransform hosted at the expansionAddress. Panics when encounters an error.
-func Write(s beam.Scope, expansionAddress string, configuration *WriteConfiguration, input beam.PCollection) beam.PCollection {
-	output, err := TryWrite(s, expansionAddress, configuration, input)
-	if err != nil {
-		panic(errors.WithContextf(err, "tried cross-language for %v against %v and failed", expansionUri, expansionAddress))
-	}
-	return output[outputRowTupleTag]
-}
+// tryWrite an input beam.PCollection to file or object systems, configured by a writeConfiguration that calls
+// xlschema.TryTransform. Forwards any error received from beam.TryCrossLanguage. WriteOption opts applies optional
+// details to the writeConfiguration. Providing no WithWriteExpansionAddr WriteOption defaults to an automatic
+// execution of an expansion service.
+func tryWrite(s beam.Scope, configuration *writeConfiguration, input beam.PCollection, opts ...WriteOption) (map[string]beam.PCollection, error) {
 
-// TryWrite an input beam.PCollection to file or object systems, configured by a WriteConfiguration that calls a
-// beam.TryCrossLanguage PTransform hosted at the expansionAddress. Forwards any error received from
-// beam.TryCrossLanguage.
-func TryWrite(s beam.Scope, expansionAddress string, configuration *WriteConfiguration, input beam.PCollection) (map[string]beam.PCollection, error) {
+	configuration.expansionAddress = autoStartupAddress
+	configuration.Compression = CompressionUnCompressed
+	configuration.FilenameSuffix = configuration.Format
+
+	for _, opt := range opts {
+		opt.apply(configuration)
+	}
+
 	if err := configuration.isValidErr(); err != nil {
 		return nil, err
 	}
@@ -286,7 +404,7 @@ func TryWrite(s beam.Scope, expansionAddress string, configuration *WriteConfigu
 		outputRowTupleTag: typex.New(reflect.TypeOf(WriteResult{})),
 	}
 
-	output, err := beam.TryCrossLanguage(s.Scope(expansionUri), expansionUri, pl, expansionAddress, namedInput, outputTypes)
+	output, err := beam.TryCrossLanguage(s.Scope(writeURN), writeURN, pl, configuration.expansionAddress, namedInput, outputTypes)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,52 @@
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package fileio
+
+import (
+	"context"
+	"flag"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/io/xlang/fileio"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/testing/ptest"
+	"github.com/apache/beam/sdks/v2/go/test/integration"
+	"log"
+	"testing"
+)
+
+func TestWriteAvro(t *testing.T) {
+	integration.CheckFilters(t)
+	checkFlags(t)
+	xfn := func(s beam.Scope, input beam.PCollection) (beam.PCollection, error) {
+		return fileio.WriteAvro(s, writePrefix("avro", "flatSchema"), input, writeOpts...)
+	}
+	write, err := testWrite(xfn, flatSchemaElems, []*fileio.WriteResult{})
+	if err != nil {
+		t.Errorf("WriteAvro() err %v", err)
+		return
+	}
+	ptest.RunAndValidate(t, write)
+}
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+	beam.Init()
+	services := integration.NewExpansionServices()
+	defer services.Shutdown()
+	if err := setup(context.Background(), services); err != nil {
+		log.Fatalf("setup() err: %v", err)
+	}
+	ptest.MainRet(m)
+}
