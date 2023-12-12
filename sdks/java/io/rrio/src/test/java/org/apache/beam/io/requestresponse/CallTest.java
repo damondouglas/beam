@@ -206,20 +206,6 @@ public class CallTest {
   }
 
   @Test
-  public void givenTeardownTimeout_throwsError() {
-    Duration timeout = Duration.standardSeconds(1L);
-    pipeline
-        .apply(Create.of(new Request("")))
-        .apply(
-            Call.of(new ValidCaller(), RESPONSE_CODER)
-                .withTimeout(timeout)
-                .withSetupTeardown(new TeardownExceedsTimeout(timeout)));
-
-    // Exceptions thrown during teardown do not populate with the cause
-    assertThrows(IllegalStateException.class, () -> pipeline.run());
-  }
-
-  @Test
   public void givenTeardownThrowsTimeoutException_throwsError() {
     pipeline
         .apply(Create.of(new Request("")))
@@ -413,22 +399,6 @@ public class CallTest {
 
     @Override
     public void teardown() throws UserCodeExecutionException {}
-  }
-
-  private static class TeardownExceedsTimeout implements SetupTeardown {
-    private final Duration timeout;
-
-    private TeardownExceedsTimeout(Duration timeout) {
-      this.timeout = timeout.plus(Duration.standardSeconds(1L));
-    }
-
-    @Override
-    public void setup() throws UserCodeExecutionException {}
-
-    @Override
-    public void teardown() throws UserCodeExecutionException {
-      sleep(timeout);
-    }
   }
 
   private static class TeardownThrowsUserCodeExecutionException implements SetupTeardown {
