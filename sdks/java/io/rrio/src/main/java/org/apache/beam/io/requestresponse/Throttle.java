@@ -360,6 +360,7 @@ public class Throttle<RequestT> extends PTransform<PCollection<RequestT>, PColle
     @ProcessElement
     public ProcessContinuation process(
         @Element KV<Integer, List<TimestampedValue<RequestT>>> element,
+        @Timestamp Instant elementTimestamp,
         ManualWatermarkEstimator<Instant> estimator,
         RestrictionTracker<OffsetRange, Long> tracker,
         OutputReceiver<RequestT> receiver) {
@@ -378,8 +379,12 @@ public class Throttle<RequestT> extends PTransform<PCollection<RequestT>, PColle
       }
 
       TimestampedValue<RequestT> timestampedValue = element.getValue().get((int) position);
-      estimator.setWatermark(timestampedValue.getTimestamp());
-      receiver.outputWithTimestamp(timestampedValue.getValue(), timestampedValue.getTimestamp());
+      Instant timestamp = timestampedValue.getTimestamp();
+      if (timestamp.isBefore(elementTimestamp)) {
+        timestamp = elementTimestamp;
+      }
+      estimator.setWatermark(timestamp);
+      receiver.outputWithTimestamp(timestampedValue.getValue(), timestamp);
       incIfPresent(outputElementsCounter);
 
       // If we know that the next position is at the end, then we don't bother resuming.

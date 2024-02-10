@@ -26,6 +26,9 @@ import org.apache.beam.testinfra.mockapis.echo.v1.Echo.EchoResponse;
 
 /** A {@link CustomCoder} for {@link EchoResponse}es. */
 public class EchoResponseCoder extends CustomCoder<EchoResponse> {
+  public static EchoResponseCoder of() {
+    return new EchoResponseCoder();
+  }
 
   @Override
   public void encode(EchoResponse value, OutputStream outStream)
