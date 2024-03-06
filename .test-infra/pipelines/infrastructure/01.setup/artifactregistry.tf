@@ -17,6 +17,7 @@
  */
 
 resource "google_artifact_registry_repository" "default" {
+  depends_on = [google_project_service.required_services]
   description   = "Stores artifacts related to github.com/apache/beam/.test-infra/pipelines"
   format        = "DOCKER"
   repository_id = var.artifact_registry_id
