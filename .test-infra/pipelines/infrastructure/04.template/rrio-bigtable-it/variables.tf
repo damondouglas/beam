@@ -57,6 +57,11 @@ variable "template_image_prefix" {
 }
 
 variable "template_main_class" {
-  type = string
+  type        = string
   description = "The java class path that holds the main method; sets FLEX_TEMPLATE_JAVA_MAIN_CLASS"
+}
+
+variable "template_jar_path" {
+  type        = string
+  description = "The path to the built jar file"
 }
