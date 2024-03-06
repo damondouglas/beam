@@ -1,4 +1,4 @@
-package org.apache.beam.io.requestresponse;
+package org.apache.beam.io.requestresponse.it;
 
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.options.Default;
@@ -9,7 +9,7 @@ public interface BigTableITOptions extends GcpOptions {
     @Description("Test duration")
     Duration getDuration();
 
-    void setDuration();
+    void setDuration(Duration value);
 
     @Description("Generate data interval in seconds")
     @Default.Long(1L)

@@ -1,0 +1,37 @@
+plugins {
+    id 'org.apache.beam.module'
+}
+
+applyJavaNature(
+        automaticModuleName: 'org.apache.beam.sdk.io.requestresponse.it',
+        exportJavadoc: false,
+        publish: false,
+        // ShadowJar has a naming dependency with:
+        // .test-infra/pipelines/infrastructure/04.template/rrio-bigtable-it/template.tf
+        validateShadowJar: false,
+        shadowClosure: {
+            manifest {
+                attributes 'Main-Class': 'org.apache.beam.io.requestresponse.it.BigTableIT'
+            }
+            mergeServiceFiles()
+            archiveVersion = 'latest'
+        }
+)
+
+description = "Apache Beam :: SDKS :: Java :: IO :: RequestResponseIO (RRIO) :: BigTable-related Integration Testing"
+ext.summary = "BigTable implementation using RRIO compared to org.apache.beam.sdk.io.gcp.bigtable.BigtableIO"
+
+dependencies {
+    implementation project(path: ":sdks:java:io:rrio")
+    implementation project(path: ":sdks:java:core", configuration: "shadow")
+    implementation library.java.joda_time
+    implementation library.java.vendored_guava_32_1_2_jre
+
+    implementation(project(path: ":sdks:java:extensions:google-cloud-platform-core"))
+    implementation(project(path: ":sdks:java:io:google-cloud-platform"))
+    implementation platform(library.java.google_cloud_platform_libraries_bom)
+    implementation library.java.google_cloud_bigtable
+    implementation(project(path: ":sdks:java:extensions:protobuf"))
+    implementation(project(path: ":sdks:java:extensions:google-cloud-platform-core"))
+    implementation(project(path: ":sdks:java:io:google-cloud-platform"))
+}

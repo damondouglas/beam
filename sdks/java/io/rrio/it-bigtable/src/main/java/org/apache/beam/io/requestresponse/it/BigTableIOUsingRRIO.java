@@ -1,9 +1,10 @@
-package org.apache.beam.io.requestresponse;
+package org.apache.beam.io.requestresponse.it;
 
 import com.google.auto.value.AutoValue;
 import com.google.bigtable.v2.Mutation;
 import com.google.bigtable.v2.Row;
 import com.google.protobuf.ByteString;
+import org.apache.beam.io.requestresponse.RequestResponseIO;
 import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
 import org.apache.beam.sdk.io.gcp.bigtable.BigtableWriteResult;
 import org.apache.beam.sdk.io.gcp.bigtable.BigtableWriteResultCoder;

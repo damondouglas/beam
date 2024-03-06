@@ -1,4 +1,4 @@
-package org.apache.beam.io.requestresponse;
+package org.apache.beam.io.requestresponse.it;
 
 import com.google.auto.value.AutoValue;
 import com.google.bigtable.v2.Mutation;
