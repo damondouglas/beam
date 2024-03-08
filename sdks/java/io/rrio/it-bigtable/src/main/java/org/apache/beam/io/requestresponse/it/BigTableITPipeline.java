@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.beam.io.requestresponse.it;
 
 import com.google.auto.value.AutoValue;
@@ -14,49 +31,70 @@ import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 
+import static org.apache.beam.io.requestresponse.it.BigTableITHelper.valueOf;
+
 @AutoValue
 abstract class BigTableITPipeline {
 
-    static Builder builder() {
-        return new AutoValue_BigTableITPipeline.Builder();
-    }
+  static Builder builder() {
+    return new AutoValue_BigTableITPipeline.Builder();
+  }
 
-    abstract PTransform<PBegin, PCollection<Row>> getReader();
+  abstract String getKeyPrefix();
 
-    abstract PTransform<PCollection<KV<ByteString, Iterable<Mutation>>>, PCollection<BigtableWriteResult>> getWriter();
+  abstract PTransform<PBegin, PCollection<Row>> getReader();
 
-    abstract BigTableITOptions getOptions();
+  abstract PTransform<
+          PCollection<KV<ByteString, Iterable<Mutation>>>, PCollection<BigtableWriteResult>>
+      getWriter();
 
-    Pipeline createWritePipeline() {
-        Pipeline pipeline = Pipeline.create(getOptions());
-        PCollection<Instant> impulse = pipeline.apply("impulse", PeriodicImpulse.create()
-                        .withInterval(Duration.standardSeconds(getOptions().getGenerateDataIntervalSeconds()))
-                .stopAfter(getOptions().getDuration()));
+  abstract BigTableITOptions getOptions();
 
-        BigTableITHelper.generateMutationsPerImpulse(getOptions().getBigTableFamilyName(), getOptions().getNumElementsPerImpulse(), getOptions().getMutationSize(), impulse)
-                .apply("Write", getWriter())
-                .apply("Count writes", BigTableITHelper.countWrites());
+  Pipeline createWritePipeline() {
 
-        return pipeline;
-    }
+    BigTableITOptions options = getOptions();
 
-    Pipeline createReadPipeline() {
-        Pipeline pipeline = Pipeline.create(getOptions());
+    Pipeline pipeline = Pipeline.create(getOptions());
+    PCollection<Instant> impulse =
+        pipeline.apply(
+            "impulse",
+            PeriodicImpulse.create()
+                .withInterval(
+                    Duration.standardSeconds(options.getGenerateDataIntervalSeconds()))
+                .stopAfter(Duration.standardSeconds(options.getTestDurationSeconds())));
 
-        pipeline
-                .apply("Read", getReader())
-                .apply("Count reads", BigTableITHelper.countReads());
+    BigTableITHelper.generateMutationsPerImpulse(
+            options.getBigTableFamilyName(),
+            valueOf(options.getElementSizePerImpulse()),
+            valueOf(options.getMutationSize()),
+            getKeyPrefix(),
+            impulse)
+        .apply("Write", getWriter())
+        .apply("Count writes", BigTableITHelper.countWrites());
 
-        return pipeline;
-    }
+    return pipeline;
+  }
 
-    @AutoValue.Builder
-    abstract static class Builder {
-        abstract Builder setReader(PTransform<PBegin, PCollection<Row>> value);
-        abstract Builder setWriter(PTransform<PCollection<KV<ByteString, Iterable<Mutation>>>, PCollection<BigtableWriteResult>> value);
+  Pipeline createReadPipeline() {
+    Pipeline pipeline = Pipeline.create(getOptions());
 
-        abstract Builder setOptions(BigTableITOptions value);
+    pipeline.apply("Read", getReader()).apply("Count reads", BigTableITHelper.countReads());
 
-        abstract BigTableITPipeline build();
-    }
+    return pipeline;
+  }
+
+  @AutoValue.Builder
+  abstract static class Builder {
+    abstract Builder setKeyPrefix(String value);
+    abstract Builder setReader(PTransform<PBegin, PCollection<Row>> value);
+
+    abstract Builder setWriter(
+        PTransform<
+                PCollection<KV<ByteString, Iterable<Mutation>>>, PCollection<BigtableWriteResult>>
+            value);
+
+    abstract Builder setOptions(BigTableITOptions value);
+
+    abstract BigTableITPipeline build();
+  }
 }
