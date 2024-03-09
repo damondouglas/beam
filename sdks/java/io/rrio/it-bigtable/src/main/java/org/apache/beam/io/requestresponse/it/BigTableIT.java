@@ -17,8 +17,10 @@
  */
 package org.apache.beam.io.requestresponse.it;
 
+import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
+import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.MapElements;
@@ -36,8 +38,16 @@ public class BigTableIT {
 
   public static void main(String[] args) {
     BigTableITOptions options = PipelineOptionsFactory.fromArgs(args)
-            .withValidation()
             .as(BigTableITOptions.class);
+
+    long suffix = Instant.now().getMillis();
+
+    options.as(PipelineOptions.class)
+            .setJobName(String.format("rrio-bigtable-it-%s-n-%s-size-%s-%d",
+                    options.getConnector().name().toLowerCase(),
+                    options.getElementSizePerImpulse().name().toLowerCase(),
+                    options.getMutationSize().name().toLowerCase(),
+                    suffix));
 
     checkStateNotNull(options.as(GcpOptions.class).getProject(), "--project is missing but required");
 

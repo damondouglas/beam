@@ -6,8 +6,6 @@ applyJavaNature(
         automaticModuleName: 'org.apache.beam.sdk.io.requestresponse.it',
         exportJavadoc: false,
         publish: false,
-        // ShadowJar has a naming dependency with:
-        // .test-infra/pipelines/infrastructure/04.template/rrio-bigtable-it/template.tf
         validateShadowJar: false,
         shadowClosure: {
             manifest {
@@ -35,6 +33,6 @@ dependencies {
     implementation(project(path: ":sdks:java:extensions:google-cloud-platform-core"))
     implementation(project(path: ":sdks:java:io:google-cloud-platform"))
 
-    runtimeOnly project(":runners:google-cloud-dataflow-java")
+    implementation project(":runners:google-cloud-dataflow-java")
     runtimeOnly project(path: ":runners:direct-java", configuration: "shadow")
 }

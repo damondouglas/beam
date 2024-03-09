@@ -1,0 +1,62 @@
+{
+  "description": "Reads from Dataflow Eventarc Pub/Sub Channel and writes to Big/Query",
+  "name": "Dataflow Jobs data to Big/Query",
+  "parameters": [
+    {
+      "name": "testDurationSeconds",
+      "helpText": "Test duration in seconds",
+      "isOptional": true,
+      "label": "testDurationSeconds",
+      "paramType": "NUMBER"
+    },
+    {
+      "name": "generateDataIntervalSeconds",
+      "helpText": "Generate data interval in seconds",
+      "isOptional": true,
+      "label": "generateDataIntervalSeconds",
+      "paramType": "TEXT"
+    },
+    {
+      "name": "bigTableFamilyName",
+      "helpText": "BigTable family name",
+      "isOptional": true,
+      "label": "bigTableFamilyName",
+      "paramType": "TEXT"
+    },
+    {
+      "name": "elementSizePerImpulse",
+      "helpText": "Number of elements to generate per impulse: SMALL, MEDIUM, LARGE",
+      "isOptional": false,
+      "label": "elementSizePerImpulse",
+      "paramType": "TEXT"
+    },
+    {
+      "name": "mutationSize",
+      "helpText": "Size per mutation: SMALL, MEDIUM, LARGE",
+      "isOptional": false,
+      "label": "mutationSize",
+      "paramType": "TEXT"
+    },
+    {
+      "name": "connector",
+      "helpText": "BigTable connector: INHERENT, RRIO",
+      "isOptional": false,
+      "label": "connector",
+      "paramType": "TEXT"
+    },
+    {
+      "name": "instanceId",
+      "helpText": "BigTable Instance ID",
+      "isOptional": true,
+      "label": "instanceId",
+      "paramType": "TEXT"
+    },
+    {
+      "name": "tableId",
+      "helpText": "BigTable TableId",
+      "isOptional": true,
+      "label": "tableId",
+      "paramType": "TEXT"
+    }
+  ]
+}
