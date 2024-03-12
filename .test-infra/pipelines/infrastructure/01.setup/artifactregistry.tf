@@ -17,7 +17,7 @@
  */
 
 resource "google_artifact_registry_repository" "default" {
-  depends_on = [google_project_service.required_services]
+  depends_on    = [google_project_service.required_services]
   description   = "Stores artifacts related to github.com/apache/beam/.test-infra/pipelines"
   format        = "DOCKER"
   repository_id = var.artifact_registry_id
@@ -27,5 +27,5 @@ resource "google_artifact_registry_repository" "default" {
 resource "google_artifact_registry_repository_iam_member" "dataflow_worker" {
   member     = "serviceAccount:${google_service_account.dataflow_worker.email}"
   repository = google_artifact_registry_repository.default.id
-  role       = "roles/artifactregistry.reader"
+  role       = "roles/artifactregistry.repoAdmin"
 }

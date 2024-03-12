@@ -56,17 +56,17 @@ variable "storage_bucket_name" {
   description = "The bucket to store the template JSON"
 }
 
-variable "template_image_prefix" {
+variable "pipeline_image_prefix" {
   type        = string
-  description = "The artifact registry image prefix of the Dataflow template"
+  description = "The artifact registry image prefix of the Dataflow pipeline"
 }
 
-variable "template_jar_name" {
+variable "pipeline_jar_name" {
   type        = string
   description = "The filename of the shadow jar"
 }
 
-variable "template_main_class" {
+variable "pipeline_main_class" {
   type        = string
   description = "The main class to execute"
 }

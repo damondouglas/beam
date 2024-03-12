@@ -16,7 +16,10 @@
  * limitations under the License.
  */
 
-// Output the path to the generated Dataflow Template File GCS path.
-output "template_file_gcs_path" {
-  value = local.template_file_gcs_path
+provider "google" {
+  project = var.project
+}
+
+provider "google-beta" {
+  project = var.project
 }
