@@ -17,6 +17,8 @@
  */
 package org.apache.beam.io.requestresponse.it;
 
+import static org.apache.beam.io.requestresponse.it.BigTableITHelper.valueOf;
+
 import com.google.auto.value.AutoValue;
 import com.google.bigtable.v2.Mutation;
 import com.google.bigtable.v2.Row;
@@ -25,13 +27,13 @@ import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.bigtable.BigtableWriteResult;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.PeriodicImpulse;
+import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
-
-import static org.apache.beam.io.requestresponse.it.BigTableITHelper.valueOf;
 
 @AutoValue
 abstract class BigTableITPipeline {
@@ -50,18 +52,29 @@ abstract class BigTableITPipeline {
 
   abstract BigTableITOptions getOptions();
 
-  Pipeline createWritePipeline() {
+  Pipeline createPipeline() {
+    if (getOptions().getReadOrWrite().equals(BigTableITHelper.ReadOrWrite.WRITE)) {
+      return createWritePipeline();
+    }
+
+    return createReadPipeline();
+  }
+
+  private Pipeline createWritePipeline() {
 
     BigTableITOptions options = getOptions();
 
-    Pipeline pipeline = Pipeline.create(getOptions());
+    Duration interval = Duration.standardSeconds(options.getGenerateDataIntervalSeconds());
+
+    Pipeline pipeline = Pipeline.create(options);
     PCollection<Instant> impulse =
-        pipeline.apply(
-            "impulse",
-            PeriodicImpulse.create()
-                .withInterval(
-                    Duration.standardSeconds(options.getGenerateDataIntervalSeconds()))
-                .stopAfter(Duration.standardSeconds(options.getTestDurationSeconds())));
+        pipeline
+            .apply(
+                "impulse",
+                PeriodicImpulse.create()
+                    .withInterval(interval)
+                    .stopAfter(Duration.standardSeconds(options.getTestDurationSeconds())))
+            .apply("window", Window.into(FixedWindows.of(interval)));
 
     BigTableITHelper.generateMutationsPerImpulse(
             options.getBigTableFamilyName(),
@@ -75,7 +88,7 @@ abstract class BigTableITPipeline {
     return pipeline;
   }
 
-  Pipeline createReadPipeline() {
+  private Pipeline createReadPipeline() {
     Pipeline pipeline = Pipeline.create(getOptions());
 
     pipeline.apply("Read", getReader()).apply("Count reads", BigTableITHelper.countReads());
@@ -86,6 +99,7 @@ abstract class BigTableITPipeline {
   @AutoValue.Builder
   abstract static class Builder {
     abstract Builder setKeyPrefix(String value);
+
     abstract Builder setReader(PTransform<PBegin, PCollection<Row>> value);
 
     abstract Builder setWriter(

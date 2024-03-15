@@ -49,3 +49,9 @@ resource "google_bigtable_gc_policy" "default" {
     duration = "1h"
   }
 }
+
+resource "google_bigtable_instance_iam_member" "default" {
+  instance = google_bigtable_instance.default.name
+  member   = "serviceAccount:${data.google_service_account.dataflow_worker.email}"
+  role     = "roles/bigtable.user"
+}

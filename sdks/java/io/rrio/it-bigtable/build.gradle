@@ -27,12 +27,21 @@ dependencies {
 
     implementation(project(path: ":sdks:java:extensions:google-cloud-platform-core"))
     implementation(project(path: ":sdks:java:io:google-cloud-platform"))
-    implementation platform(library.java.google_cloud_platform_libraries_bom)
-    implementation library.java.google_cloud_bigtable
     implementation(project(path: ":sdks:java:extensions:protobuf"))
     implementation(project(path: ":sdks:java:extensions:google-cloud-platform-core"))
-    implementation(project(path: ":sdks:java:io:google-cloud-platform"))
+
+    implementation platform(library.java.google_cloud_platform_libraries_bom)
+    implementation library.java.google_cloud_bigtable
+    implementation("com.google.cloud:google-cloud-eventarc")
+    implementation("com.google.cloud:google-cloud-run")
+
+    implementation("io.cloudevents:cloudevents-api:2.3.0")
+    implementation("io.cloudevents:cloudevents-core:2.3.0")
+    implementation("io.cloudevents:cloudevents-json-jackson:2.3.0")
+    implementation("com.google.cloud:google-cloudevent-types:0.8.1")
 
     implementation project(":runners:google-cloud-dataflow-java")
     runtimeOnly project(path: ":runners:direct-java", configuration: "shadow")
+
+    testImplementation library.java.junit
 }

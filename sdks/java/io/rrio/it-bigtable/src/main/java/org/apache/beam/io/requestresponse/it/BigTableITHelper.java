@@ -17,24 +17,19 @@
  */
 package org.apache.beam.io.requestresponse.it;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import com.google.bigtable.v2.Mutation;
 import com.google.bigtable.v2.Row;
 import com.google.bigtable.v2.RowFilter;
+import com.google.common.base.Strings;
 import com.google.protobuf.ByteString;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import org.apache.beam.sdk.coders.CoderException;
-import org.apache.beam.sdk.coders.CustomCoder;
-import org.apache.beam.sdk.coders.IterableCoder;
-import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
-import org.apache.beam.sdk.extensions.protobuf.ByteStringCoder;
-import org.apache.beam.sdk.io.gcp.bigquery.RowMutation;
+import org.apache.beam.sdk.io.gcp.bigtable.BigtableIO;
 import org.apache.beam.sdk.io.gcp.bigtable.BigtableWriteResult;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -45,7 +40,6 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Instant;
-import org.apache.beam.sdk.io.gcp.bigtable.BigtableIO;
 
 public final class BigTableITHelper {
 
@@ -58,11 +52,14 @@ public final class BigTableITHelper {
   private static final Counter COUNTER_READ = Metrics.counter(COUNTER_CLASS, "num_elements_read");
 
   static PCollection<KV<ByteString, Iterable<Mutation>>> generateMutationsPerImpulse(
-      String familyName, int numPerImpulse, int sizePerMutation, String keyPrefix, PCollection<Instant> impulse) {
-    return impulse
-        .apply(
-            "generateMutations",
-            ParDo.of(new GenerateMutationFn(familyName, numPerImpulse, sizePerMutation, keyPrefix)));
+      String familyName,
+      int numPerImpulse,
+      int sizePerMutation,
+      String keyPrefix,
+      PCollection<Instant> impulse) {
+    return impulse.apply(
+        "generateMutations",
+        ParDo.of(new GenerateMutationFn(familyName, numPerImpulse, sizePerMutation, keyPrefix)));
   }
 
   private static class GenerateMutationFn
@@ -76,11 +73,12 @@ public final class BigTableITHelper {
 
     private final String keyPrefix;
 
-    private GenerateMutationFn(String familyName, int numPerImpulse, int sizePerMutation, String keyPrefix) {
+    private GenerateMutationFn(
+        String familyName, int numPerImpulse, int sizePerMutation, String keyPrefix) {
       this.familyName = familyName;
       this.numPerImpulse = numPerImpulse;
       this.sizePerMutation = sizePerMutation;
-        this.keyPrefix = keyPrefix;
+      this.keyPrefix = keyPrefix;
     }
 
     @ProcessElement
@@ -94,10 +92,12 @@ public final class BigTableITHelper {
       for (int i = 0; i < numPerImpulse; i++) {
         result.add(
             Mutation.newBuilder()
-                    .setSetCell(Mutation.SetCell.newBuilder()
-                            .setTimestampMicros(element.getMillis() * 1_000L)
-                            .setFamilyName(familyName)
-                            .setValue(value).build())
+                .setSetCell(
+                    Mutation.SetCell.newBuilder()
+                        .setTimestampMicros(element.getMillis() * 1_000L)
+                        .setFamilyName(familyName)
+                        .setValue(value)
+                        .build())
                 .build());
       }
       COUNTER_GENERATE.inc(numPerImpulse);
@@ -140,13 +140,13 @@ public final class BigTableITHelper {
   static int valueOf(Size size) {
     switch (size) {
       case LARGE:
-        return 100_000_000;
+        return 100_000;
       case MEDIUM:
-        return 10_000_000;
+        return 10_000;
       case SMALL:
-        return 1_000_000;
-      case LOCAL:
         return 1_000;
+      case LOCAL:
+        return 100;
     }
     throw new IllegalArgumentException("no value maps to " + size);
   }
@@ -156,48 +156,72 @@ public final class BigTableITHelper {
     RRIO,
   }
 
-  static PTransform<PBegin, PCollection<Row>> readerOf(BigTableITOptions options, String keyPrefix) {
+  public enum ReadOrWrite {
+    READ,
+    WRITE,
+  }
+
+  static String keyPrefixOf(BigTableITOptions options) {
+    String modifier = options.getBigTableKeyModifier();
+
+    if (options.getReadOrWrite().equals(ReadOrWrite.WRITE) && Strings.isNullOrEmpty(modifier)) {
+      modifier = UUID.randomUUID().toString();
+    }
+
+    if (options.getReadOrWrite().equals(ReadOrWrite.READ)) {
+      checkState(
+          !Strings.isNullOrEmpty(modifier),
+          String.format("--bigTableKeyModifier required when --readOrWrite=%s", ReadOrWrite.READ));
+    }
+
+    return String.format("%s#%s", options.getConnector(), modifier).toLowerCase();
+  }
+
+  static PTransform<PBegin, PCollection<Row>> readerOf(
+      BigTableITOptions options, String keyPrefix) {
     Connector connector = options.getConnector();
     switch (connector) {
       case RRIO:
         return BigTableIOUsingRRIO.read()
-                .withProjectId(options.as(GcpOptions.class).getProject())
-                .withInstanceId(options.getInstanceId())
-                .withTableId(options.getTableId())
-                .withRowFilter(rowFilterOf(keyPrefix));
+            .withProjectId(options.as(GcpOptions.class).getProject())
+            .withInstanceId(options.getInstanceId())
+            .withTableId(options.getTableId())
+            .withRowFilter(rowFilterOf(keyPrefix));
 
       case INHERENT:
         return BigtableIO.read()
-                .withProjectId(options.as(GcpOptions.class).getProject())
-                .withInstanceId(options.getInstanceId())
-                .withTableId(options.getTableId())
-                .withRowFilter(rowFilterOf(keyPrefix));
+            .withProjectId(options.as(GcpOptions.class).getProject())
+            .withInstanceId(options.getInstanceId())
+            .withTableId(options.getTableId())
+            .withRowFilter(rowFilterOf(keyPrefix));
     }
     throw new IllegalArgumentException("no value maps to " + connector);
   }
 
-  static PTransform<PCollection<KV<ByteString, Iterable<Mutation>>>, PCollection<BigtableWriteResult>> writerOf(BigTableITOptions options) {
+  static PTransform<
+          PCollection<KV<ByteString, Iterable<Mutation>>>, PCollection<BigtableWriteResult>>
+      writerOf(BigTableITOptions options) {
     Connector connector = options.getConnector();
     switch (connector) {
       case RRIO:
         return BigTableIOUsingRRIO.write()
-                .withProjectId(options.as(GcpOptions.class).getProject())
-                .withInstanceId(options.getInstanceId())
-                .withTableId(options.getTableId());
+            .withProjectId(options.as(GcpOptions.class).getProject())
+            .withInstanceId(options.getInstanceId())
+            .withTableId(options.getTableId());
 
       case INHERENT:
         return BigtableIO.write()
-                .withProjectId(options.as(GcpOptions.class).getProject())
-                .withInstanceId(options.getInstanceId())
-                .withTableId(options.getTableId())
-                .withWriteResults();
+            .withProjectId(options.as(GcpOptions.class).getProject())
+            .withInstanceId(options.getInstanceId())
+            .withTableId(options.getTableId())
+            .withWriteResults();
     }
     throw new IllegalArgumentException("no value maps to " + connector);
   }
 
   private static RowFilter rowFilterOf(String keyPrefix) {
     return RowFilter.newBuilder()
-            .setRowKeyRegexFilter(ByteString.copyFromUtf8(String.format("^%s.*", keyPrefix)))
-            .build();
+        .setRowKeyRegexFilter(ByteString.copyFromUtf8(String.format("^%s.*", keyPrefix)))
+        .build();
   }
 }

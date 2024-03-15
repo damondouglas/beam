@@ -17,50 +17,59 @@
  */
 package org.apache.beam.io.requestresponse.it;
 
+import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
+
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.beam.runners.dataflow.options.DataflowPipelineOptions;
-import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.MapElements;
-import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.transforms.PeriodicImpulse;
-import org.apache.beam.sdk.values.TypeDescriptors;
-import org.joda.time.Duration;
 import org.joda.time.Instant;
-
-import java.util.UUID;
-
-import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
 
 public class BigTableIT {
 
+  static final String KEY_PREFIX = "keyprefix";
+  static final String READ_OR_WRITE = "readorwrite";
+  static final String CONNECTOR = "connector";
+
   public static void main(String[] args) {
-    BigTableITOptions options = PipelineOptionsFactory.fromArgs(args)
-            .as(BigTableITOptions.class);
+    BigTableITOptions options =
+        PipelineOptionsFactory.fromArgs(args).withValidation().as(BigTableITOptions.class);
 
     long suffix = Instant.now().getMillis();
 
-    options.as(PipelineOptions.class)
-            .setJobName(String.format("rrio-bigtable-it-%s-n-%s-size-%s-%d",
-                    options.getConnector().name().toLowerCase(),
-                    options.getElementSizePerImpulse().name().toLowerCase(),
-                    options.getMutationSize().name().toLowerCase(),
-                    suffix));
+    checkStateNotNull(
+        options.as(GcpOptions.class).getProject(), "--project is missing but required");
 
-    checkStateNotNull(options.as(GcpOptions.class).getProject(), "--project is missing but required");
+    String keyPrefix = BigTableITHelper.keyPrefixOf(options);
 
-    String keyPrefix = String.format("%s#%s", options.getConnector().name().toLowerCase(), UUID.randomUUID());
+    Map<String, String> labels = new HashMap<>();
+    labels.put(KEY_PREFIX, keyPrefix.replaceAll("#", "__"));
+    labels.put(READ_OR_WRITE, options.getReadOrWrite().name().toLowerCase());
+    labels.put(CONNECTOR, options.getConnector().name().toLowerCase());
 
-    BigTableITPipeline bigTableITPipeline = BigTableITPipeline.builder()
+    options.as(DataflowPipelineOptions.class).setLabels(labels);
+
+    options
+        .as(PipelineOptions.class)
+        .setJobName(
+            String.format(
+                "rrio-bigtable-it-%s-%s-n-%s-size-%s-%d",
+                options.getReadOrWrite().name().toLowerCase(),
+                options.getConnector().name().toLowerCase(),
+                options.getElementSizePerImpulse().name().toLowerCase(),
+                options.getMutationSize().name().toLowerCase(),
+                suffix));
+
+    BigTableITPipeline bigTableITPipeline =
+        BigTableITPipeline.builder()
             .setOptions(options)
             .setKeyPrefix(keyPrefix)
             .setWriter(BigTableITHelper.writerOf(options))
             .setReader(BigTableITHelper.readerOf(options, keyPrefix))
             .build();
 
-    bigTableITPipeline.createWritePipeline().run();
-//    bigTableITPipeline.createReadPipeline().run();
+    bigTableITPipeline.createPipeline().run();
   }
 }

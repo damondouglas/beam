@@ -70,3 +70,8 @@ variable "pipeline_main_class" {
   type        = string
   description = "The main class to execute"
 }
+
+variable "eventarc_pubsub_topic_id" {
+  type        = string
+  description = "The ID of the Pub/Sub topic"
+}

@@ -24,7 +24,7 @@ import org.apache.beam.sdk.options.Validation;
 
 public interface BigTableITOptions extends PipelineOptions {
   @Description("Test duration in seconds")
-  @Default.Long(60L)
+  @Default.Long(3L)
   Long getTestDurationSeconds();
 
   void setTestDurationSeconds(Long value);
@@ -56,15 +56,29 @@ public interface BigTableITOptions extends PipelineOptions {
   @Description("BigTable connector")
   @Validation.Required
   BigTableITHelper.Connector getConnector();
+
   void setConnector(BigTableITHelper.Connector value);
 
   @Description("BigTable Instance ID")
   @Default.String("rrio-bigtable-it")
   String getInstanceId();
+
   void setInstanceId(String value);
 
   @Description("BigTable Table ID")
   @Default.String("rrio-bigtable-it-table")
   String getTableId();
+
   void setTableId(String value);
+
+  @Description("Read or Write")
+  @Validation.Required
+  BigTableITHelper.ReadOrWrite getReadOrWrite();
+
+  void setReadOrWrite(BigTableITHelper.ReadOrWrite value);
+
+  @Description("BigTable Key Modifier")
+  String getBigTableKeyModifier();
+
+  void setBigTableKeyModifier(String value);
 }

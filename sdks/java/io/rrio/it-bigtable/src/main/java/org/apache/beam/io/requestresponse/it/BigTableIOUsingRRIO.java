@@ -21,14 +21,13 @@ import com.google.auto.value.AutoValue;
 import com.google.bigtable.v2.Mutation;
 import com.google.bigtable.v2.Row;
 import com.google.bigtable.v2.RowFilter;
-import com.google.cloud.bigtable.data.v2.BigtableDataSettings;
 import com.google.protobuf.ByteString;
+import java.io.Serializable;
 import org.apache.beam.io.requestresponse.RequestResponseIO;
 import org.apache.beam.io.requestresponse.Result;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.coders.IterableCoder;
 import org.apache.beam.sdk.extensions.protobuf.ProtoCoder;
-import org.apache.beam.sdk.io.gcp.bigtable.BigtableIO;
 import org.apache.beam.sdk.io.gcp.bigtable.BigtableWriteResult;
 import org.apache.beam.sdk.io.gcp.bigtable.BigtableWriteResultCoder;
 import org.apache.beam.sdk.transforms.Create;
@@ -37,9 +36,6 @@ import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
-
-import java.io.Serializable;
-import java.util.List;
 
 /** A test implementation of BigTable using {@link RequestResponseIO}. */
 class BigTableIOUsingRRIO {
@@ -66,10 +62,12 @@ class BigTableIOUsingRRIO {
       Coder<Row> rowCoder = ProtoCoder.of(Row.class);
       IterableCoder<Row> coder = IterableCoder.of(rowCoder);
       BigTableReader reader = new BigTableReader(configurationBuilder.build());
-      RequestResponseIO<byte[], Iterable<Row>> transform = RequestResponseIO.ofCallerAndSetupTeardown(reader, coder);
+      RequestResponseIO<byte[], Iterable<Row>> transform =
+          RequestResponseIO.ofCallerAndSetupTeardown(reader, coder);
       Result<Iterable<Row>> result =
-              input.apply("impulse", Create.of(new byte[0]))
-                      .apply(BigTableReader.class.getSimpleName(), transform);
+          input
+              .apply("impulse", Create.of(new byte[0]))
+              .apply(BigTableReader.class.getSimpleName(), transform);
       return result.getResponses().apply("flatten", Flatten.iterables());
     }
 
@@ -104,10 +102,11 @@ class BigTableIOUsingRRIO {
     @Override
     public PCollection<BigtableWriteResult> expand(
         PCollection<KV<ByteString, Iterable<Mutation>>> input) {
-      Result<BigtableWriteResult> result = input.apply(
+      Result<BigtableWriteResult> result =
+          input.apply(
               BigTableWriter.class.getSimpleName(),
-              RequestResponseIO.ofCallerAndSetupTeardown(new BigTableWriter(configurationBuilder.build()), BigtableWriteResultCoder.of())
-      );
+              RequestResponseIO.ofCallerAndSetupTeardown(
+                  new BigTableWriter(configurationBuilder.build()), BigtableWriteResultCoder.of()));
 
       return result.getResponses();
     }
@@ -129,6 +128,7 @@ class BigTableIOUsingRRIO {
   abstract static class ReadConfiguration implements Serializable {
 
     abstract String getProjectId();
+
     abstract String getInstanceId();
 
     abstract String getTableId();
@@ -143,7 +143,9 @@ class BigTableIOUsingRRIO {
     abstract static class Builder implements Serializable {
 
       abstract Builder setProjectId(String value);
+
       abstract Builder setInstanceId(String value);
+
       abstract Builder setTableId(String value);
 
       abstract Builder setRowFilter(RowFilter value);
@@ -160,6 +162,7 @@ class BigTableIOUsingRRIO {
     }
 
     abstract String getProjectId();
+
     abstract String getInstanceId();
 
     abstract String getTableId();
@@ -170,6 +173,7 @@ class BigTableIOUsingRRIO {
       abstract Builder setProjectId(String value);
 
       abstract Builder setInstanceId(String value);
+
       abstract Builder setTableId(String value);
 
       abstract WriteConfiguration build();
