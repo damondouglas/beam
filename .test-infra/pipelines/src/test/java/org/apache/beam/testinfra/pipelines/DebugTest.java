@@ -15,21 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.pubsub;
+package org.apache.beam.testinfra.pipelines;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.apache.beam.sdk.annotations.Internal;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.Validation.Required;
+import com.google.dataflow.v1beta3.Job;
+import org.junit.Test;
 
-/** Options for reading from Pub/Sub. */
-@Internal
-public interface PubsubReadOptions extends PipelineOptions {
-  @Description("Pub/Sub subscription")
-  @Required
-  @JsonIgnore
-  SubscriptionPathOptionValue getSubscription();
-
-  void setSubscription(SubscriptionPathOptionValue value);
+public class DebugTest {
+  @Test
+  public void debug() {
+    System.out.println(Job.getDescriptor().findFieldByName("pipeline_description").getMessageType().toProto());
+  }
 }

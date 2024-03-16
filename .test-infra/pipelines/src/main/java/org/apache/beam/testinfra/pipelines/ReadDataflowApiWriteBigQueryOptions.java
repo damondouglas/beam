@@ -15,22 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.beam.testinfra.pipelines.dataflow;
+package org.apache.beam.testinfra.pipelines;
 
-import org.apache.beam.sdk.annotations.Internal;
-import org.apache.beam.sdk.options.Default;
-import org.apache.beam.sdk.options.Description;
-import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
 
-/** Options required for calling the Dataflow API. */
-@Internal
-public interface DataflowJobsOptions extends PipelineOptions {
+public interface ReadDataflowApiWriteBigQueryOptions extends PipelineOptions {
+  String getSubscription();
 
-  @Description("Target for use with the Google Cloud Dataflow API")
-  @Default.String("dns:///dataflow.googleapis.com")
-  @Hidden
-  String getDataflowTarget();
-
-  void setDataflowTarget(String value);
+  void setSubscription(String value);
 }

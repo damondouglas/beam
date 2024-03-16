@@ -15,6 +15,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.beam.testinfra.pipelines;
 
-/** Defines how testinfra pipelines write to BigQuery. */
-package org.apache.beam.testinfra.pipelines.bigquery;
+import com.google.dataflow.v1beta3.Job;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import org.apache.beam.sdk.coders.CoderException;
+import org.apache.beam.sdk.coders.CustomCoder;
+
+class JobCoder extends CustomCoder<Job> {
+
+  @Override
+  public void encode(Job value, OutputStream outStream) throws CoderException, IOException {
+    value.writeTo(outStream);
+  }
+
+  @Override
+  public Job decode(InputStream inStream) throws CoderException, IOException {
+    return Job.parseFrom(inStream);
+  }
+}

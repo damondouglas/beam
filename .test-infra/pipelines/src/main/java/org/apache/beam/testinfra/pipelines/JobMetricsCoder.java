@@ -15,6 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.beam.testinfra.pipelines;
 
-/** Defines how to read from the Dataflow API. */
-package org.apache.beam.testinfra.pipelines.dataflow;
+import com.google.dataflow.v1beta3.JobMetrics;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import org.apache.beam.sdk.coders.CoderException;
+import org.apache.beam.sdk.coders.CustomCoder;
+
+class JobMetricsCoder extends CustomCoder<JobMetrics> {
+  @Override
+  public void encode(JobMetrics value, OutputStream outStream) throws CoderException, IOException {
+    value.writeTo(outStream);
+  }
+
+  @Override
+  public JobMetrics decode(InputStream inStream) throws CoderException, IOException {
+    return JobMetrics.parseFrom(inStream);
+  }
+}

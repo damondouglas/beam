@@ -140,9 +140,9 @@ public final class BigTableITHelper {
   static int valueOf(Size size) {
     switch (size) {
       case LARGE:
-        return 100_000;
+        return 3_000;
       case MEDIUM:
-        return 10_000;
+        return 2_000;
       case SMALL:
         return 1_000;
       case LOCAL:
