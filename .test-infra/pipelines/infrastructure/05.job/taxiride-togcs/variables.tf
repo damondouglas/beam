@@ -16,21 +16,33 @@
  * limitations under the License.
  */
 
-// Provision a service account that will be bound to the Dataflow pipeline
-resource "google_service_account" "dataflow_worker" {
-  depends_on   = [google_project_service.required_services]
-  account_id   = var.dataflow_worker_service_account_id
-  display_name = var.dataflow_worker_service_account_id
-  description  = "The service account bound to the compute engine instance provisioned to run Dataflow Jobs"
+variable "project" {
+  type        = string
+  description = "The Google Cloud Platform (GCP) project within which resources are provisioned"
 }
 
-// Provision IAM roles for the Dataflow runner service account
-resource "google_project_iam_member" "dataflow_worker_service_account_roles" {
-  depends_on = [google_project_service.required_services]
-  for_each   = toset([
-    "roles/editor",
-  ])
-  role    = each.key
-  member  = "serviceAccount:${google_service_account.dataflow_worker.email}"
-  project = var.project
+variable "region" {
+  type        = string
+  description = "The Google Cloud Platform (GCP) region in which to provision resources"
 }
+
+variable "network" {
+  type        = string
+  description = "The name of the Google Compute network"
+}
+
+variable "subnetwork" {
+  type        = string
+  description = "The name of the Google Compute subnetwork"
+}
+
+variable "dataflow_worker_service_account_id" {
+  type        = string
+  description = "The Dataflow Worker Service Account ID"
+}
+
+variable "subscription_id" {
+  type        = string
+  description = "The ID of the Pub/Sub subscription"
+}
+

@@ -48,8 +48,18 @@ def jupiterVersion = "5.9.3"
 def nettyVersion = "1.53.0"
 
 dependencies {
-    implementation enforcedPlatform(library.java.google_cloud_platform_libraries_bom)
+    implementation platform(library.java.google_cloud_platform_libraries_bom)
     implementation library.java.google_api_services_bigquery
+    implementation 'com.google.cloud:google-cloud-dataflow'
+    implementation("com.google.cloud:google-cloud-eventarc")
+    implementation("com.google.cloud:google-cloud-run")
+
+    implementation("io.cloudevents:cloudevents-api:2.3.0")
+    implementation("io.cloudevents:cloudevents-core:2.3.0")
+    implementation("io.cloudevents:cloudevents-json-jackson:2.3.0")
+    implementation("com.google.cloud:google-cloudevent-types:0.8.1")
+    
+    implementation library.java.avro
     implementation library.java.jackson_annotations
     implementation library.java.jackson_core
     implementation library.java.jackson_databind
@@ -68,6 +78,7 @@ dependencies {
     implementation project(":sdks:java:io:google-cloud-platform")
     implementation project(":sdks:java:extensions:google-cloud-platform-core")
     implementation project(path: ":sdks:java:core", configuration: "shadow")
+    implementation project(":sdks:java:io:rrio")
     runtimeOnly project(":runners:google-cloud-dataflow-java")
     runtimeOnly project(path: ":runners:direct-java", configuration: "shadow")
 
@@ -82,4 +93,23 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
     }
+}
+
+task dataflowToBigQuery(type: JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.apache.beam.testinfra.pipelines.ReadDataflowApiWriteBigQuery'
+
+    args = [
+            "--runner=Dataflow",
+            "--serviceAccount=infra-pipelines-worker@dd-temp-3905a2dd.iam.gserviceaccount.com",
+            "--network=infra-pipelines",
+            "--region=us-central1",
+            "--subnetwork=regions/us-central1/subnetworks/infra-pipelines",
+            "--usePublicIps=false",
+            "--project=dd-temp-3905a2dd",
+            "--experiments=use_runner_v2",
+            "--jobName=dataflow-api-to-bigquery-1711589256",
+            "--subscription=projects/dd-temp-3905a2dd/subscriptions/dataflow-job-v1beta3-status-changed-sub",
+            "--dataset=dataflow_job_v1beta3_status_changed",
+    ]
 }

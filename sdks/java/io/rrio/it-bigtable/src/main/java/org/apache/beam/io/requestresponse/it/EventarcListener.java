@@ -34,8 +34,8 @@ import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class EventarcListener {
-  private static final EventarcConvertJsonToJob CONVERT_EVENTARC_JSON_TO_JOB =
-      new EventarcConvertJsonToJob();
+  private static final EventarcConvertPubsubMessageToJob CONVERT_EVENTARC_JSON_TO_JOB =
+      new EventarcConvertPubsubMessageToJob();
 
   public static void main(String[] args) {
     EventarcListenerOptions options =
@@ -47,7 +47,7 @@ public class EventarcListener {
             "events", PubsubIO.readMessages().fromSubscription(options.getEventarcSubscription()));
 
     PCollectionTuple pct =
-        events.apply(EventarcConvertJsonToJob.class.getSimpleName(), CONVERT_EVENTARC_JSON_TO_JOB);
+        events.apply(EventarcConvertPubsubMessageToJob.class.getSimpleName(), CONVERT_EVENTARC_JSON_TO_JOB);
 
     PCollection<Pair<String, String>> failures =
         pct.get(CONVERT_EVENTARC_JSON_TO_JOB.getFailureTag());

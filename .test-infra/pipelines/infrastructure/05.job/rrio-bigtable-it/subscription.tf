@@ -25,3 +25,12 @@ resource "google_pubsub_subscription" "eventarc" {
   topic = data.google_pubsub_topic.eventarc.id
 }
 
+resource "google_pubsub_subscription_iam_member" "eventarc" {
+  for_each = toset([
+    "roles/pubsub.viewer",
+    "roles/pubsub.subscriber",
+  ])
+  member       = "serviceAccount:${data.google_service_account.worker.email}"
+  role         = each.key
+  subscription = google_pubsub_subscription.eventarc.id
+}

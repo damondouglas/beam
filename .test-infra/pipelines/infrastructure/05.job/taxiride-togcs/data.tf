@@ -16,21 +16,29 @@
  * limitations under the License.
  */
 
-// Provision a service account that will be bound to the Dataflow pipeline
-resource "google_service_account" "dataflow_worker" {
-  depends_on   = [google_project_service.required_services]
-  account_id   = var.dataflow_worker_service_account_id
-  display_name = var.dataflow_worker_service_account_id
-  description  = "The service account bound to the compute engine instance provisioned to run Dataflow Jobs"
+// Query the Dataflow Worker service account
+data "google_service_account" "dataflow_worker" {
+  account_id = var.dataflow_worker_service_account_id
 }
 
-// Provision IAM roles for the Dataflow runner service account
-resource "google_project_iam_member" "dataflow_worker_service_account_roles" {
-  depends_on = [google_project_service.required_services]
-  for_each   = toset([
-    "roles/editor",
-  ])
-  role    = each.key
-  member  = "serviceAccount:${google_service_account.dataflow_worker.email}"
-  project = var.project
+// Query the network
+data "google_compute_network" "default" {
+  name = var.network
+}
+
+// Query the subnetwork
+data "google_compute_subnetwork" "default" {
+  name   = var.subnetwork
+  region = var.region
+  lifecycle {
+    postcondition {
+      condition     = self.private_ip_google_access == true
+      error_message = "Subnetwork: ${self.id} in network ${data.google_compute_network.default.id} does not have Google Private Access turned on"
+    }
+  }
+}
+
+// Query the Pub/Sub subscription.
+data "google_pubsub_subscription" "default" {
+  name = var.subscription_id
 }

@@ -24,7 +24,6 @@ import org.apache.beam.sdk.options.Validation;
 
 public interface BigTableITOptions extends PipelineOptions {
   @Description("Test duration in seconds")
-  @Default.Long(60L)
   Long getTestDurationSeconds();
 
   void setTestDurationSeconds(Long value);

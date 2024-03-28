@@ -15,22 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.beam.testinfra.pipelines.dataflow;
 
-// Provision a service account that will be bound to the Dataflow pipeline
-resource "google_service_account" "dataflow_worker" {
-  depends_on   = [google_project_service.required_services]
-  account_id   = var.dataflow_worker_service_account_id
-  display_name = var.dataflow_worker_service_account_id
-  description  = "The service account bound to the compute engine instance provisioned to run Dataflow Jobs"
-}
+import com.google.auto.value.AutoValue;
+import org.apache.beam.sdk.schemas.AutoValueSchema;
+import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
+import org.apache.beam.sdk.schemas.annotations.SchemaCaseFormat;
+import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.CaseFormat;
 
-// Provision IAM roles for the Dataflow runner service account
-resource "google_project_iam_member" "dataflow_worker_service_account_roles" {
-  depends_on = [google_project_service.required_services]
-  for_each   = toset([
-    "roles/editor",
-  ])
-  role    = each.key
-  member  = "serviceAccount:${google_service_account.dataflow_worker.email}"
-  project = var.project
+import java.util.List;
+
+@DefaultSchema(AutoValueSchema.class)
+@SchemaCaseFormat(CaseFormat.LOWER_UNDERSCORE)
+@AutoValue
+public abstract class JobExecutionStageInfo {
+
+  public abstract List<String> getStepName();
+
+  @AutoValue.Builder
+  public abstract static class Builder {
+
+    public abstract Builder setStepName(List<String> stepName);
+
+    public abstract JobExecutionStageInfo build();
+  }
 }

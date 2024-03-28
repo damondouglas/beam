@@ -32,95 +32,113 @@ locals {
   }
   writes = {
     "${local.inherent}-n-${local.small}-size-${local.small}" : {
-      connector = local.inherent,
-      n         = local.small,
-      size      = local.small,
+      connector        = local.inherent,
+      n                = local.small,
+      size             = local.small,
+      duration_seconds = 10,
     }
     "${local.inherent}-n-${local.small}-size-${local.medium}" : {
-      connector = local.inherent,
-      n         = local.small,
-      size      = local.medium,
+      connector        = local.inherent,
+      n                = local.small,
+      size             = local.medium,
+      duration_seconds = 10,
     }
     "${local.inherent}-n-${local.small}-size-${local.large}" : {
-      connector = local.inherent,
-      n         = local.small,
-      size      = local.large,
+      connector        = local.inherent,
+      n                = local.small,
+      size             = local.large,
+      duration_seconds = 10,
     }
     "${local.inherent}-n-${local.medium}-size-${local.small}" : {
-      connector = local.inherent,
-      n         = local.medium,
-      size      = local.small,
+      connector        = local.inherent,
+      n                = local.small,
+      size             = local.small,
+      duration_seconds = 100,
     }
     "${local.inherent}-n-${local.medium}-size-${local.medium}" : {
-      connector = local.inherent,
-      n         = local.medium,
-      size      = local.medium,
+      connector        = local.inherent,
+      n                = local.small,
+      size             = local.medium,
+      duration_seconds = 100,
     }
     "${local.inherent}-n-${local.medium}-size-${local.large}" : {
-      connector = local.inherent,
-      n         = local.medium,
-      size      = local.large,
+      connector        = local.inherent,
+      n                = local.small,
+      size             = local.large,
+      duration_seconds = 100,
     }
     "${local.inherent}-n-${local.large}-size-${local.small}" : {
-      connector = local.inherent,
-      n         = local.large,
-      size      = local.small,
+      connector        = local.inherent,
+      n                = local.small,
+      size             = local.small,
+      duration_seconds = 1000,
     }
     "${local.inherent}-n-${local.large}-size-${local.medium}" : {
-      connector = local.inherent,
-      n         = local.large,
-      size      = local.medium,
+      connector        = local.inherent,
+      n                = local.small,
+      size             = local.medium,
+      duration_seconds = 1000,
     }
     "${local.inherent}-n-${local.large}-size-${local.large}" : {
-      connector = local.inherent,
-      n         = local.large,
-      size      = local.large,
+      connector        = local.inherent,
+      n                = local.small,
+      size             = local.large,
+      duration_seconds = 1000,
     }
 
     "${local.rrio}-n-${local.small}-size-${local.small}" : {
-      connector = local.rrio,
-      n         = local.small,
-      size      = local.small,
+      connector        = local.rrio,
+      n                = local.small,
+      size             = local.small,
+      duration_seconds = 10,
     }
     "${local.rrio}-n-${local.small}-size-${local.medium}" : {
-      connector = local.rrio,
-      n         = local.small,
-      size      = local.medium,
+      connector        = local.rrio,
+      n                = local.small,
+      size             = local.medium,
+      duration_seconds = 10,
     }
     "${local.rrio}-n-${local.small}-size-${local.large}" : {
-      connector = local.rrio,
-      n         = local.small,
-      size      = local.large,
+      connector        = local.rrio,
+      n                = local.small,
+      size             = local.large,
+      duration_seconds = 10,
     }
     "${local.rrio}-n-${local.medium}-size-${local.small}" : {
-      connector = local.rrio,
-      n         = local.medium,
-      size      = local.small,
+      connector        = local.rrio,
+      n                = local.small,
+      size             = local.small,
+      duration_seconds = 100,
     }
     "${local.rrio}-n-${local.medium}-size-${local.medium}" : {
-      connector = local.rrio,
-      n         = local.medium,
-      size      = local.medium,
+      connector        = local.rrio,
+      n                = local.small,
+      size             = local.medium,
+      duration_seconds = 100,
     }
     "${local.rrio}-n-${local.medium}-size-${local.large}" : {
-      connector = local.rrio,
-      n         = local.medium,
-      size      = local.large,
+      connector        = local.rrio,
+      n                = local.small,
+      size             = local.large,
+      duration_seconds = 100,
     }
     "${local.rrio}-n-${local.large}-size-${local.small}" : {
-      connector = local.rrio,
-      n         = local.large,
-      size      = local.small,
+      connector        = local.rrio,
+      n                = local.small,
+      size             = local.small,
+      duration_seconds = 1000,
     }
     "${local.rrio}-n-${local.large}-size-${local.medium}" : {
-      connector = local.rrio,
-      n         = local.large,
-      size      = local.medium,
+      connector        = local.rrio,
+      n                = local.small,
+      size             = local.medium,
+      duration_seconds = 1000,
     }
     "${local.rrio}-n-${local.large}-size-${local.large}" : {
-      connector = local.rrio,
-      n         = local.large,
-      size      = local.large,
+      connector        = local.rrio,
+      n                = local.small,
+      size             = local.large,
+      duration_seconds = 1000,
     }
   }
 
@@ -207,6 +225,7 @@ java -jar ${local.volume.mount}/${basename(google_storage_bucket_object.jar.name
 --connector=${each.value["connector"]} \
 --project=${var.project} \
 --elementSizePerImpulse=${each.value["n"]} \
+--testDurationSeconds=${each.value["duration_seconds"]} \
 --mutationSize=${each.value["size"]} \
 --experiments=use_runner_v2 \
 --readOrWrite=WRITE

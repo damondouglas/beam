@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package environment provides helpers for interacting with environment variables.
+// WorkerPackage environment provides helpers for interacting with environment variables.
 package environment
 
 import (
