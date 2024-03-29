@@ -32,11 +32,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.io.requestresponse.Caller;
+import org.apache.beam.io.requestresponse.RequestResponseIO;
+import org.apache.beam.io.requestresponse.Result;
 import org.apache.beam.io.requestresponse.SetupTeardown;
 import org.apache.beam.io.requestresponse.UserCodeExecutionException;
+import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.values.PCollection;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 
 class BigTableReader implements Caller<byte[], Iterable<Row>>, SetupTeardown {
+
   private final BigTableIOUsingRRIO.ReadConfiguration configuration;
   private final Filters.Filter filter;
   private transient @MonotonicNonNull BigtableDataClient client;

@@ -18,12 +18,11 @@
 package org.apache.beam.testinfra.pipelines.dataflow;
 
 import com.google.auto.value.AutoValue;
+import java.util.List;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 import org.apache.beam.sdk.schemas.annotations.SchemaCaseFormat;
 import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.CaseFormat;
-
-import java.util.List;
 
 @DefaultSchema(AutoValueSchema.class)
 @SchemaCaseFormat(CaseFormat.LOWER_UNDERSCORE)

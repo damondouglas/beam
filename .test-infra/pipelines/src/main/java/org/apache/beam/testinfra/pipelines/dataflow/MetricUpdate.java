@@ -40,20 +40,9 @@ public abstract class MetricUpdate {
     Builder builder =
         builder()
             .setKind(source.getKind())
-            .setCumulative(source.getCumulative())
-            .setUpdateTime(Instant.ofEpochSecond(source.getUpdateTime().getSeconds()));
-
-    if (source.getScalar().hasNumberValue()) {
-      builder.setScalar(source.getScalar().getNumberValue());
-    }
-
-    if (source.getMeanSum().hasNumberValue()) {
-      builder.setMeanSum(source.getMeanSum().getNumberValue());
-    }
-
-    if (source.getMeanCount().hasNumberValue()) {
-      builder.setMeanCount(Double.valueOf(source.getMeanCount().getNumberValue()).longValue());
-    }
+            .setName(source.getName().toString())
+            .setUpdateTime(Instant.ofEpochSecond(source.getUpdateTime().getSeconds()))
+            .setValue(source.getScalar().toString());
 
     return builder.build();
   }
@@ -62,34 +51,22 @@ public abstract class MetricUpdate {
     return new AutoValue_MetricUpdate.Builder();
   }
 
-  public abstract MetricStructuredName getName();
+  public abstract String getName();
 
   public abstract String getKind();
 
-  public abstract Boolean getCumulative();
-
-  public abstract @Nullable Double getScalar();
-
-  public abstract @Nullable Double getMeanSum();
-
-  public abstract @Nullable Long getMeanCount();
+  public abstract String getValue();
 
   public abstract Instant getUpdateTime();
 
   @AutoValue.Builder
   public abstract static class Builder {
 
-    public abstract Builder setName(MetricStructuredName name);
+    public abstract Builder setName(String name);
 
     public abstract Builder setKind(String kind);
 
-    public abstract Builder setCumulative(Boolean cumulative);
-
-    public abstract Builder setScalar(Double scalar);
-
-    public abstract Builder setMeanSum(Double meanSum);
-
-    public abstract Builder setMeanCount(Long meanCount);
+    public abstract Builder setValue(String value);
 
     public abstract Builder setUpdateTime(Instant updateTime);
 

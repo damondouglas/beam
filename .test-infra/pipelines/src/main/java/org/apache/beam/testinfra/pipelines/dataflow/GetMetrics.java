@@ -45,7 +45,7 @@ public class GetMetrics implements Caller<GetJobMetricsRequest, JobMetrics>, Set
     try {
       com.google.dataflow.v1beta3.JobMetrics response =
           checkStateNotNull(client).getJobMetrics(request);
-      return JobMetrics.from(response);
+      return JobMetrics.from(request.getJobId(), response);
     } catch (ApiException e) {
       ApiExceptions.handle(e);
     }

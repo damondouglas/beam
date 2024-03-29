@@ -46,7 +46,8 @@ import org.slf4j.LoggerFactory;
 public class EventarcConvertPubsubMessageToJob
     extends PTransform<PCollection<PubsubMessage>, EventarcConvertPubsubMessageToJob.Result> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(EventarcConvertPubsubMessageToJob.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(EventarcConvertPubsubMessageToJob.class);
 
   public static PTransform<PCollection<PubsubMessage>, EventarcConvertPubsubMessageToJob.Result>
       of() {

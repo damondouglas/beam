@@ -23,18 +23,22 @@ import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 import org.apache.beam.sdk.schemas.annotations.SchemaCaseFormat;
 import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.CaseFormat;
 
-import java.util.Map;
-
 @DefaultSchema(AutoValueSchema.class)
 @SchemaCaseFormat(CaseFormat.LOWER_UNDERSCORE)
 @AutoValue
 public abstract class MetricStructuredName {
 
+  static MetricStructuredName from(com.google.dataflow.v1beta3.MetricStructuredName source) {
+    return builder().setName(source.getName()).setOrigin(source.getOrigin()).build();
+  }
+
+  static Builder builder() {
+    return new AutoValue_MetricStructuredName.Builder();
+  }
+
   public abstract String getOrigin();
 
   public abstract String getName();
-
-  public abstract Map<String, String> getContext();
 
   @AutoValue.Builder
   public abstract static class Builder {
@@ -42,8 +46,6 @@ public abstract class MetricStructuredName {
     public abstract Builder setOrigin(String origin);
 
     public abstract Builder setName(String name);
-
-    public abstract Builder setContext(Map<String, String> context);
 
     public abstract MetricStructuredName build();
   }

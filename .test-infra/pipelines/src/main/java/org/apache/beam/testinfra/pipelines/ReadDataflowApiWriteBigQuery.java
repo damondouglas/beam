@@ -22,9 +22,11 @@ import com.google.api.services.bigquery.model.TimePartitioning;
 import com.google.dataflow.v1beta3.GetJobMetricsRequest;
 import com.google.dataflow.v1beta3.GetJobRequest;
 import com.google.events.cloud.dataflow.v1beta3.JobState;
+import com.google.protobuf.ByteString;
 import org.apache.beam.io.requestresponse.Result;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.annotations.Internal;
+import org.apache.beam.sdk.coders.RowCoder;
 import org.apache.beam.sdk.extensions.gcp.options.GcpOptions;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
@@ -53,7 +55,6 @@ import org.slf4j.LoggerFactory;
  * Constructs and executes a {@link Pipeline} that reads from the Dataflow API and writes to
  * BigQuery. For internal use only.
  */
-@Internal
 public class ReadDataflowApiWriteBigQuery {
 
   public interface Options extends DataflowJobsOptions, PubsubReadOptions, BigQueryWriteOptions {}
@@ -73,39 +74,45 @@ public class ReadDataflowApiWriteBigQuery {
         messages.apply(EventarcConvertPubsubMessageToJob.of());
     logErrors("Eventarc to PubSub errors", events.getFailures());
 
-    PCollection<com.google.events.cloud.dataflow.v1beta3.Job> doneJobs = Transforms.jobs(events.getOutput(), JobState.JOB_STATE_DONE);
-    PCollection<com.google.events.cloud.dataflow.v1beta3.Job> canceledJobs = Transforms.jobs(events.getOutput(), JobState.JOB_STATE_CANCELLED);
-    PCollection<com.google.events.cloud.dataflow.v1beta3.Job> drainedJobs = Transforms.jobs(events.getOutput(), JobState.JOB_STATE_DRAINED);
+    PCollection<com.google.events.cloud.dataflow.v1beta3.Job> doneJobs =
+        Transforms.jobs(events.getOutput(), JobState.JOB_STATE_DONE);
+    PCollection<com.google.events.cloud.dataflow.v1beta3.Job> canceledJobs =
+        Transforms.jobs(events.getOutput(), JobState.JOB_STATE_CANCELLED);
+    PCollection<com.google.events.cloud.dataflow.v1beta3.Job> drainedJobs =
+        Transforms.jobs(events.getOutput(), JobState.JOB_STATE_DRAINED);
 
-    PCollectionList<com.google.events.cloud.dataflow.v1beta3.Job> filteredPColList = PCollectionList
-            .of(doneJobs)
-            .and(canceledJobs)
-            .and(drainedJobs);
+    PCollectionList<com.google.events.cloud.dataflow.v1beta3.Job> filteredPColList =
+        PCollectionList.of(doneJobs).and(canceledJobs).and(drainedJobs);
 
-    PCollection<com.google.events.cloud.dataflow.v1beta3.Job> filteredJobs = filteredPColList.apply("flatten filtered jobs", Flatten.pCollections());
+    PCollection<com.google.events.cloud.dataflow.v1beta3.Job> filteredJobs =
+        filteredPColList.apply("flatten filtered jobs", Flatten.pCollections());
 
     logInfo("filteredJobs", filteredJobs);
 
     PCollection<GetJobRequest> getJobRequests = Transforms.jobRequestsFrom(filteredJobs);
 
-    PCollection<GetJobMetricsRequest> getJobMetricsRequests = Transforms.metricRequestsFrom(filteredJobs);
+    PCollection<GetJobMetricsRequest> getJobMetricsRequests =
+        Transforms.metricRequestsFrom(filteredJobs);
 
     logInfo("getJobRequests", getJobRequests);
     logInfo("getJobMetricsRequests", getJobMetricsRequests);
 
     Result<Job> jobsFromApi = getJobRequests.apply("GetJobs", GetJob.pTransform());
 
-    Result<JobMetrics> metricsFromApi = getJobMetricsRequests.apply("GetMetrics", GetMetrics.pTransform());
+    Result<JobMetrics> metricsFromApi =
+        getJobMetricsRequests.apply("GetMetrics", GetMetrics.pTransform());
 
     logErrors("jobsFromApi", jobsFromApi.getFailures());
     logErrors("metricsFromApi", metricsFromApi.getFailures());
 
-    TableReference jobsTable = new TableReference()
+    TableReference jobsTable =
+        new TableReference()
             .setProjectId(projectId)
             .setDatasetId(options.getDataset())
             .setTableId("jobs_" + Instant.now().getMillis());
 
-    TableReference metricsTable = new TableReference()
+    TableReference metricsTable =
+        new TableReference()
             .setProjectId(projectId)
             .setDatasetId(options.getDataset())
             .setTableId("metrics_" + Instant.now().getMillis());
@@ -113,16 +120,19 @@ public class ReadDataflowApiWriteBigQuery {
     PCollection<Row> jobRows = Transforms.jobRowsFrom(jobsFromApi.getResponses());
     PCollection<Row> metricRows = Transforms.metricRowsFrom(metricsFromApi.getResponses());
 
-    jobRows.apply("write jobs", BigQueryIO
-            .<Row>write()
+
+    jobRows.apply(
+        "write jobs",
+        BigQueryIO.<Row>write()
             .useBeamSchema()
             .to(jobsTable)
             .withTimePartitioning(new TimePartitioning())
             .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED)
             .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND));
 
-    metricRows.apply("write metrics", BigQueryIO
-            .<Row>write()
+    metricRows.apply(
+        "write metrics",
+        BigQueryIO.<Row>write()
             .useBeamSchema()
             .to(metricsTable)
             .withTimePartitioning(new TimePartitioning())
@@ -131,6 +141,20 @@ public class ReadDataflowApiWriteBigQuery {
 
     pipeline.run();
   }
+
+//  private static void debug(String name, PCollection<Row> rows, RowCoder coder) {
+//    rows.apply(name, ParDo.of(new Debug())).setCoder(coder);
+//  }
+//
+//  private static class Debug extends DoFn<Row, Row> {
+//    @ProcessElement
+//    public void process(
+//            @Element Row element,
+//            OutputReceiver<Row> receiver
+//    ) {
+//      receiver.output(element);
+//    }
+//  }
 
   private static <T> void logErrors(String name, PCollection<T> errors) {
     errors.apply(name, ParDo.of(new ErrorFn<>()));

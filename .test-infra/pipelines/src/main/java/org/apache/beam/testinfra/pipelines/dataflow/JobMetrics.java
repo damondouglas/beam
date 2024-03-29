@@ -53,8 +53,9 @@ public abstract class JobMetrics {
 
   public static final RowCoder ROW_CODER = RowCoder.of(SCHEMA);
 
-  static JobMetrics from(com.google.dataflow.v1beta3.JobMetrics response) {
+  static JobMetrics from(String jobId, com.google.dataflow.v1beta3.JobMetrics response) {
     return builder()
+        .setJobId(jobId)
         .setMetricTime(Instant.ofEpochSecond(response.getMetricTime().getSeconds()))
         .setMetrics(MetricUpdate.from(response.getMetricsList()))
         .build();
@@ -64,12 +65,16 @@ public abstract class JobMetrics {
     return new AutoValue_JobMetrics.Builder();
   }
 
+  public abstract String getJobId();
+
   public abstract Instant getMetricTime();
 
   public abstract List<MetricUpdate> getMetrics();
 
   @AutoValue.Builder
   public abstract static class Builder {
+
+    public abstract Builder setJobId(String jobId);
 
     public abstract Builder setMetricTime(Instant metricTime);
 

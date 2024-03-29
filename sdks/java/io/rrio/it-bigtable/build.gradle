@@ -46,20 +46,23 @@ dependencies {
     testImplementation library.java.junit
 }
 
+def projectId = "";
+def region = "";
+
 task eventarclistener(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'org.apache.beam.io.requestresponse.it.EventarcListener'
 
     args = [
             "--runner=Dataflow",
-            "--serviceAccount=infra-pipelines-worker@dd-temp-3905a2dd.iam.gserviceaccount.com",
+            "--serviceAccount=infra-pipelines-worker@${projectId}.iam.gserviceaccount.com",
             "--network=infra-pipelines",
-            "--region=us-central1",
-            "--subnetwork=regions/us-central1/subnetworks/infra-pipelines",
+            "--region=${region}",
+            "--subnetwork=regions/${region}/subnetworks/infra-pipelines",
             "--usePublicIps=false",
-            "--project=dd-temp-3905a2dd",
+            "--project=${projectId}",
             "--experiments=use_runner_v2",
             "--jobName=rrio-bigtable-it-eventarc-listener",
-            "--eventarcSubscription=projects/dd-temp-3905a2dd/subscriptions/dataflow-rrio-bigtable-it-listener",
+            "--eventarcSubscription=projects/${projectId}/subscriptions/dataflow-rrio-bigtable-it-listener",
     ]
 }

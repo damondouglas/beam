@@ -76,6 +76,7 @@ dependencies {
     implementation "com.google.cloud:google-cloudevent-types:${googleCloudEventsVersion}"
     implementation 'com.google.api.grpc:grpc-google-cloud-dataflow-v1beta3'
     implementation project(":sdks:java:io:google-cloud-platform")
+    implementation project(":sdks:java:extensions:avro")
     implementation project(":sdks:java:extensions:google-cloud-platform-core")
     implementation project(path: ":sdks:java:core", configuration: "shadow")
     implementation project(":sdks:java:io:rrio")
@@ -95,21 +96,24 @@ test {
     }
 }
 
+def projectId = "";
+def region = "";
+
 task dataflowToBigQuery(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'org.apache.beam.testinfra.pipelines.ReadDataflowApiWriteBigQuery'
 
     args = [
-            "--runner=Dataflow",
-            "--serviceAccount=infra-pipelines-worker@dd-temp-3905a2dd.iam.gserviceaccount.com",
-            "--network=infra-pipelines",
-            "--region=us-central1",
-            "--subnetwork=regions/us-central1/subnetworks/infra-pipelines",
-            "--usePublicIps=false",
-            "--project=dd-temp-3905a2dd",
-            "--experiments=use_runner_v2",
-            "--jobName=dataflow-api-to-bigquery-1711589256",
-            "--subscription=projects/dd-temp-3905a2dd/subscriptions/dataflow-job-v1beta3-status-changed-sub",
+//            "--runner=Dataflow",
+//            "--serviceAccount=infra-pipelines-worker@${projectId}.iam.gserviceaccount.com",
+//            "--network=infra-pipelines",
+//            "--region=${region}",
+//            "--subnetwork=regions/${region}/subnetworks/infra-pipelines",
+//            "--usePublicIps=false",
+            "--project=${projectId}",
+//            "--experiments=use_runner_v2",
+//            "--jobName=dataflow-api-to-bigquery-1711653965",
+            "--subscription=projects/${projectId}/subscriptions/dataflow-job-v1beta3-status-changed-sub",
             "--dataset=dataflow_job_v1beta3_status_changed",
     ]
 }
