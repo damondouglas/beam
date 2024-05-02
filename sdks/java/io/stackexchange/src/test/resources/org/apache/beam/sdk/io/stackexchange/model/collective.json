@@ -1,0 +1,20 @@
+{
+  "tags": [
+    "c#",
+    "audio"
+  ],
+  "external_links": [
+    {
+      "type": "website",
+      "link": "https://stackoverflow.blog"
+    },
+    {
+      "type": "support",
+      "link": "mailto:support@stackoverflow.com"
+    }
+  ],
+  "description": "A fake Collective for demonstration purposes",
+  "link": "/s/audiobubble",
+  "name": "Audio Bubble",
+  "slug": "audiobubble"
+}

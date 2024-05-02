@@ -1,0 +1,827 @@
+{
+  "items": [
+    {
+      "tags": [
+        "python",
+        "google-cloud-platform",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "google-cloud-pubsub"
+      ],
+      "owner": {
+        "account_id": 20473702,
+        "reputation": 21,
+        "user_id": 15023520,
+        "user_type": "registered",
+        "profile_image": "https://lh6.googleusercontent.com/-nb09hio_-UQ/AAAAAAAAAAI/AAAAAAAAAAA/AMZuuclCl3-NYC1Oor6ovExkjk2P9VfR6Q/s96-c/photo.jpg?sz=256",
+        "display_name": "Amarjeet",
+        "link": "https://stackoverflow.com/users/15023520/amarjeet"
+      },
+      "is_answered": false,
+      "view_count": 14,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1710775237,
+      "creation_date": 1710584463,
+      "last_edit_date": 1710775237,
+      "question_id": 78171377,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78171377/keyerror-in-apache-beam-while-reading-from-pubsub-ref-pcollection-pcollection-6",
+      "title": "KeyError in Apache Beam while reading from pubSub,&#39;ref_PCollection_PCollection_6&#39;"
+    },
+    {
+      "tags": [
+        "python",
+        "google-cloud-platform",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 27153083,
+        "reputation": 7,
+        "user_id": 20692276,
+        "user_type": "registered",
+        "profile_image": "https://i.stack.imgur.com/wIjsw.jpg?s=256&g=1",
+        "display_name": "Rohan Anand",
+        "link": "https://stackoverflow.com/users/20692276/rohan-anand"
+      },
+      "is_answered": false,
+      "view_count": 50,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1710431490,
+      "creation_date": 1689698938,
+      "last_edit_date": 1710431490,
+      "question_id": 76714991,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/76714991/dynamic-staging-bucket-argument-in-apache-beam-dataflow-pipeline-gcp",
+      "title": "Dynamic Staging bucket argument in Apache Beam dataflow pipeline (GCP)"
+    },
+    {
+      "tags": [
+        "go",
+        "google-cloud-platform",
+        "google-bigquery",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 14130838,
+        "reputation": 41,
+        "user_id": 10208881,
+        "user_type": "registered",
+        "profile_image": "https://lh4.googleusercontent.com/-BYMxp99Rl2o/AAAAAAAAAAI/AAAAAAAAC54/pQ1WtjUz0xU/photo.jpg?sz=256",
+        "display_name": "August",
+        "link": "https://stackoverflow.com/users/10208881/august"
+      },
+      "is_answered": false,
+      "view_count": 18,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1710287528,
+      "creation_date": 1710287528,
+      "question_id": 78150580,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78150580/add-a-column-to-an-apache-beam-pcollection-in-go",
+      "title": "Add a column to an Apache Beam Pcollection in Go"
+    },
+    {
+      "tags": [
+        "apache-flink",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 4080311,
+        "reputation": 368,
+        "user_id": 3350965,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/23b3093ffa67aba04853c93cfcffa345?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "arunmahadevan",
+        "link": "https://stackoverflow.com/users/3350965/arunmahadevan"
+      },
+      "is_answered": false,
+      "view_count": 21,
+      "answer_count": 1,
+      "score": 0,
+      "last_activity_date": 1710028356,
+      "creation_date": 1709934521,
+      "question_id": 78130416,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78130416/how-to-avoid-shuffle-in-a-google-dataflow-streaming-pipeline-that-writes-fixed-w",
+      "title": "How to avoid shuffle in a Google Dataflow streaming pipeline that writes Fixed window outputs"
+    },
+    {
+      "tags": [
+        "pipeline",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "direct-runner"
+      ],
+      "owner": {
+        "account_id": 4735281,
+        "reputation": 185,
+        "user_id": 13372198,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/efb6b32a84aca71ffca052a104f8ee7d?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "swygerts",
+        "link": "https://stackoverflow.com/users/13372198/swygerts"
+      },
+      "is_answered": false,
+      "view_count": 23,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1709758389,
+      "creation_date": 1709758389,
+      "question_id": 78117387,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78117387/beam-pipeline-pulling-java-sdk-image-behavior",
+      "title": "Beam Pipeline Pulling Java SDK Image Behavior"
+    },
+    {
+      "tags": [
+        "apache-kafka",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "apache-beam-kafkaio"
+      ],
+      "owner": {
+        "account_id": 9132373,
+        "reputation": 996,
+        "user_id": 6793457,
+        "user_type": "registered",
+        "profile_image": "https://i.stack.imgur.com/FHWs1.jpg?s=256&g=1",
+        "display_name": "Siddhanta Rath",
+        "link": "https://stackoverflow.com/users/6793457/siddhanta-rath"
+      },
+      "is_answered": false,
+      "view_count": 7,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1709731561,
+      "creation_date": 1709731561,
+      "question_id": 78114739,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78114739/kafka-io-in-dataflow-job-is-not-able-read-more-than-1-5k-messages-per-second-wit",
+      "title": "Kafka IO in dataflow job is not able read more than 1.5k messages per second with workers equal to the topic partition"
+    },
+    {
+      "tags": [
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 11590409,
+        "reputation": 397,
+        "user_id": 8490994,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/df133e54c97cea374a88d51b54792210?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "crbl",
+        "link": "https://stackoverflow.com/users/8490994/crbl"
+      },
+      "is_answered": false,
+      "view_count": 25,
+      "answer_count": 2,
+      "score": 0,
+      "last_activity_date": 1709633265,
+      "creation_date": 1709301909,
+      "last_edit_date": 1709568944,
+      "question_id": 78088302,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78088302/dataflow-job-repeatedly-stops-vms-after-cpu-utilization-reaches-100-and-start",
+      "title": "Dataflow job repeatedly stops VM&#39;s after CPU utilization reaches ~100% and starts another one instead of working in parallel"
+    },
+    {
+      "tags": [
+        "hbase",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "google-cloud-bigtable",
+        "bigtable"
+      ],
+      "owner": {
+        "account_id": 9132373,
+        "reputation": 996,
+        "user_id": 6793457,
+        "user_type": "registered",
+        "profile_image": "https://i.stack.imgur.com/FHWs1.jpg?s=256&g=1",
+        "display_name": "Siddhanta Rath",
+        "link": "https://stackoverflow.com/users/6793457/siddhanta-rath"
+      },
+      "is_answered": false,
+      "view_count": 18,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1709615671,
+      "creation_date": 1709553480,
+      "last_edit_date": 1709615671,
+      "question_id": 78101052,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78101052/how-to-eradicate-the-slowness-caused-due-to-reading-rows-from-bigtable-with-hbas",
+      "title": "How to eradicate the slowness caused due to reading rows from bigtable with hbase client in google dataflow job?"
+    },
+    {
+      "tags": [
+        "google-cloud-platform",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 16667378,
+        "reputation": 1,
+        "user_id": 12045713,
+        "user_type": "registered",
+        "profile_image": "https://lh3.googleusercontent.com/a-/AAuE7mB52tKMN_9QIACB-ei8ORXdCOFPVezM-UReZi1MDA=k-s256",
+        "display_name": "Anton Shalkovich",
+        "link": "https://stackoverflow.com/users/12045713/anton-shalkovich"
+      },
+      "is_answered": false,
+      "view_count": 18,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1709575083,
+      "creation_date": 1709575083,
+      "question_id": 78103239,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78103239/how-to-make-a-dataflow-job-to-use-different-worker-pools-for-different-stages-of",
+      "title": "How to make a Dataflow job to use different worker pools for different stages of a workflow?"
+    },
+    {
+      "tags": [
+        "google-cloud-platform",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "beam-sql"
+      ],
+      "owner": {
+        "account_id": 11590409,
+        "reputation": 397,
+        "user_id": 8490994,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/df133e54c97cea374a88d51b54792210?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "crbl",
+        "link": "https://stackoverflow.com/users/8490994/crbl"
+      },
+      "is_answered": false,
+      "view_count": 42,
+      "answer_count": 1,
+      "score": 0,
+      "last_activity_date": 1709569395,
+      "creation_date": 1709136623,
+      "last_edit_date": 1709209643,
+      "question_id": 78075948,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78075948/apache-beam-sqltransform-does-not-process-data-distributed-it-doesnt-use-multi",
+      "title": "Apache Beam SqlTransform does not process data distributed. It doesn&#39;t use multiple workers. How to deal with Dataflow pipeline &quot;straggler detected&quot;"
+    },
+    {
+      "tags": [
+        "python",
+        "gzip",
+        "pipeline",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 2739534,
+        "reputation": 3,
+        "user_id": 2361365,
+        "user_type": "registered",
+        "accept_rate": 50,
+        "profile_image": "https://i.stack.imgur.com/RvGYj.jpg?s=256&g=1",
+        "display_name": "Amedeo Tortora",
+        "link": "https://stackoverflow.com/users/2361365/amedeo-tortora"
+      },
+      "is_answered": false,
+      "view_count": 37,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1709412013,
+      "creation_date": 1709326419,
+      "last_edit_date": 1709412013,
+      "question_id": 78090407,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78090407/read-gzip-from-pubsub-notification-in-dataflow",
+      "title": "Read gzip from pubsub notification in dataflow"
+    },
+    {
+      "tags": [
+        "google-cloud-dataflow",
+        "apache-beam",
+        "apache-beam-io"
+      ],
+      "owner": {
+        "account_id": 12147316,
+        "reputation": 1,
+        "user_id": 8869094,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/68a3fe79c052c7ecc44ab0807ee6f114?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "user8869094",
+        "link": "https://stackoverflow.com/users/8869094/user8869094"
+      },
+      "is_answered": false,
+      "view_count": 19,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1709052291,
+      "creation_date": 1709052291,
+      "question_id": 78069161,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78069161/apache-beam-dataflow-pipeline-scaling-issue",
+      "title": "Apache Beam/Dataflow Pipeline Scaling Issue"
+    },
+    {
+      "tags": [
+        "python",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "langchain"
+      ],
+      "owner": {
+        "account_id": 30636133,
+        "reputation": 1,
+        "user_id": 23485544,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/5a41b378fda35f05ad0a95ba752f0a21?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "usadurant",
+        "link": "https://stackoverflow.com/users/23485544/usadurant"
+      },
+      "is_answered": false,
+      "view_count": 18,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1708965732,
+      "creation_date": 1708965732,
+      "question_id": 78062546,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78062546/issue-with-dataflowrunner-job-stuck-at-0",
+      "title": "Issue with DataflowRunner: Job stuck at 0%"
+    },
+    {
+      "tags": [
+        "python",
+        "google-bigquery",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "apache-beam-io"
+      ],
+      "owner": {
+        "account_id": 3876061,
+        "reputation": 45,
+        "user_id": 3210075,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/0e6b9093740d415f16eb30c3531faf63?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "asafal",
+        "link": "https://stackoverflow.com/users/3210075/asafal"
+      },
+      "is_answered": false,
+      "view_count": 30,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1708900370,
+      "creation_date": 1708900370,
+      "question_id": 78057914,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78057914/apache-beam-on-dataflow-writetobigquery-doesnt-work",
+      "title": "apache beam on dataflow: WriteToBigQuery doesnt work"
+    },
+    {
+      "tags": [
+        "google-cloud-platform",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 25787888,
+        "reputation": 23,
+        "user_id": 19532391,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/1339e7330e94fb1b9b03fc57cc910eb2?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Raj Banerjee",
+        "link": "https://stackoverflow.com/users/19532391/raj-banerjee"
+      },
+      "is_answered": false,
+      "view_count": 34,
+      "answer_count": 1,
+      "score": 0,
+      "last_activity_date": 1708806731,
+      "creation_date": 1708795004,
+      "last_edit_date": 1708795908,
+      "question_id": 78053281,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78053281/concurrent-processing-in-gcp-dataflow-job",
+      "title": "Concurrent Processing In GCP dataflow Job"
+    },
+    {
+      "tags": [
+        "python",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "value-provider"
+      ],
+      "owner": {
+        "account_id": 4735281,
+        "reputation": 185,
+        "user_id": 13372198,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/efb6b32a84aca71ffca052a104f8ee7d?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "swygerts",
+        "link": "https://stackoverflow.com/users/13372198/swygerts"
+      },
+      "is_answered": false,
+      "view_count": 19,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1708718243,
+      "creation_date": 1708718243,
+      "question_id": 78049901,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78049901/does-beam-readfromjdbc-transform-allow-for-valueproviders",
+      "title": "Does Beam ReadFromJdbc Transform allow for ValueProviders?"
+    },
+    {
+      "tags": [
+        "google-cloud-platform",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "google-cloud-pubsub",
+        "apache-beam-io"
+      ],
+      "owner": {
+        "account_id": 26504205,
+        "reputation": 1,
+        "user_id": 20140617,
+        "user_type": "registered",
+        "profile_image": "https://lh3.googleusercontent.com/a/ALm5wu1Uda0j3hxu4VJsHSVj4wVMTfDuJyhX64KLr1QX=k-s256",
+        "display_name": "Mohammed Umar",
+        "link": "https://stackoverflow.com/users/20140617/mohammed-umar"
+      },
+      "is_answered": false,
+      "view_count": 20,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1708597788,
+      "creation_date": 1708597788,
+      "question_id": 78040191,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78040191/google-cloud-dataflow-handling-schema-evolution-addition-of-columns",
+      "title": "Google Cloud Dataflow handling schema evolution (Addition of columns)"
+    },
+    {
+      "tags": [
+        "python-3.x",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "beam-sql"
+      ],
+      "owner": {
+        "account_id": 11590409,
+        "reputation": 397,
+        "user_id": 8490994,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/df133e54c97cea374a88d51b54792210?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "crbl",
+        "link": "https://stackoverflow.com/users/8490994/crbl"
+      },
+      "is_answered": false,
+      "view_count": 45,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1708597757,
+      "creation_date": 1708591773,
+      "last_edit_date": 1708597757,
+      "question_id": 78039505,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78039505/apache-beam-and-sqltransform-converting-data-types-from-dict-not-working",
+      "title": "Apache Beam and SqlTransform: Converting data types from dict not working"
+    },
+    {
+      "tags": [
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 3735353,
+        "reputation": 61,
+        "user_id": 3106406,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/2310078b955d6bbd71bfe3f058a634d8?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Manit Gupta",
+        "link": "https://stackoverflow.com/users/3106406/manit-gupta"
+      },
+      "is_answered": false,
+      "view_count": 32,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1708573111,
+      "creation_date": 1708570440,
+      "last_edit_date": 1708573111,
+      "question_id": 78038171,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78038171/unable-to-return-a-default-coder-for-parmultidoanonymous-out1",
+      "title": "Unable to return a default Coder for ParMultiDo(Anonymous).out1"
+    },
+    {
+      "tags": [
+        "java",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "google-cloud-pubsub"
+      ],
+      "owner": {
+        "account_id": 8549077,
+        "reputation": 21,
+        "user_id": 6406642,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/3822a96b2880876f445a984da634174a?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Akhilesh",
+        "link": "https://stackoverflow.com/users/6406642/akhilesh"
+      },
+      "is_answered": false,
+      "view_count": 53,
+      "answer_count": 0,
+      "score": 1,
+      "last_activity_date": 1708375096,
+      "creation_date": 1708375096,
+      "question_id": 78023375,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78023375/gcp-pubsub-dataflow-messages-sent-to-dead-letter-queue-even-if-exception-is-ea",
+      "title": "GCP PubSub / Dataflow messages sent to dead letter queue even if exception is eaten in ParDo"
+    },
+    {
+      "tags": [
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 20939881,
+        "reputation": 1,
+        "user_id": 15384193,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/dd443e176ea64d42ae69750d8f9d0000?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Andy_9876",
+        "link": "https://stackoverflow.com/users/15384193/andy-9876"
+      },
+      "is_answered": false,
+      "view_count": 26,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1708064025,
+      "creation_date": 1708056251,
+      "last_edit_date": 1708064025,
+      "question_id": 78005119,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/78005119/max-perkeycustom-comparator-returns-pcollections-of-nullpointer",
+      "title": "Max.perKey(custom Comparator) returns PCollections of NullPointer"
+    },
+    {
+      "tags": [
+        "java",
+        "unit-testing",
+        "mockito",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 21566136,
+        "reputation": 41,
+        "user_id": 15899886,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/6048f00dc25ac4805725c32c9cc72342?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Satyam Khare",
+        "link": "https://stackoverflow.com/users/15899886/satyam-khare"
+      },
+      "is_answered": false,
+      "view_count": 735,
+      "answer_count": 2,
+      "score": 1,
+      "last_activity_date": 1707769312,
+      "creation_date": 1622519698,
+      "question_id": 67782517,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/67782517/apache-beam-mock-external-clients-initialized-in-setup-lifecycle-method-of-do",
+      "title": "Apache Beam , mock external Clients initialized in @Setup Lifecycle method of DoFn"
+    },
+    {
+      "tags": [
+        "python",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 10318103,
+        "reputation": 920,
+        "user_id": 7611838,
+        "user_type": "registered",
+        "profile_image": "https://i.stack.imgur.com/Rh4xw.jpg?s=256&g=1",
+        "display_name": "Idhem",
+        "link": "https://stackoverflow.com/users/7611838/idhem"
+      },
+      "is_answered": false,
+      "view_count": 58,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1707652998,
+      "creation_date": 1707652998,
+      "question_id": 77976683,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/77976683/handling-millions-of-state-keys-in-beam-and-dataflow",
+      "title": "Handling millions of state keys in Beam and Dataflow"
+    },
+    {
+      "tags": [
+        "google-bigquery",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "google-cloud-pubsub"
+      ],
+      "owner": {
+        "account_id": 8549077,
+        "reputation": 21,
+        "user_id": 6406642,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/3822a96b2880876f445a984da634174a?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Akhilesh",
+        "link": "https://stackoverflow.com/users/6406642/akhilesh"
+      },
+      "is_answered": false,
+      "view_count": 30,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1707524897,
+      "creation_date": 1707524897,
+      "question_id": 77971493,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/77971493/does-bigquery-write-truncate-work-when-apache-beam-job-is-unbounded-reading-fro",
+      "title": "Does BigQuery WRITE_TRUNCATE work when apache beam job is unbounded (Reading from Pub/Sub) and Write Method is FILE_LOADS"
+    },
+    {
+      "tags": [
+        "google-bigquery",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 8620,
+        "reputation": 22172,
+        "user_id": 15619,
+        "user_type": "registered",
+        "accept_rate": 91,
+        "profile_image": "https://www.gravatar.com/avatar/2f169a510b7cba5a57e86d520b268447?s=256&d=identicon&r=PG",
+        "display_name": "Riduidel",
+        "link": "https://stackoverflow.com/users/15619/riduidel"
+      },
+      "is_answered": false,
+      "view_count": 33,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1707512676,
+      "creation_date": 1707512676,
+      "question_id": 77970866,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/77970866/how-to-deserialize-avro-content-from-bigquery-using-apache-beam",
+      "title": "How to deserialize Avro content from BigQuery using Apache Beam?"
+    },
+    {
+      "tags": [
+        "python",
+        "postgresql",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 25632604,
+        "reputation": 11,
+        "user_id": 19402741,
+        "user_type": "registered",
+        "profile_image": "https://lh3.googleusercontent.com/a/AATXAJzZ5j3cg8kkBk7XIa2QQXnjdV_e_5hjsLXf4Roj=k-s256",
+        "display_name": "mags",
+        "link": "https://stackoverflow.com/users/19402741/mags"
+      },
+      "is_answered": false,
+      "view_count": 49,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1707422000,
+      "creation_date": 1707422000,
+      "question_id": 77964428,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/77964428/cannot-create-poolableconnectionfactory-the-connection-attempt-failed-when-co",
+      "title": "Cannot create PoolableConnectionFactory (The connection attempt failed.) when connecting BigQuery to PostgresQL database"
+    },
+    {
+      "tags": [
+        "google-bigquery",
+        "stream",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 10318103,
+        "reputation": 920,
+        "user_id": 7611838,
+        "user_type": "registered",
+        "profile_image": "https://i.stack.imgur.com/Rh4xw.jpg?s=256&g=1",
+        "display_name": "Idhem",
+        "link": "https://stackoverflow.com/users/7611838/idhem"
+      },
+      "is_answered": false,
+      "view_count": 72,
+      "answer_count": 0,
+      "score": 0,
+      "last_activity_date": 1707321099,
+      "creation_date": 1707212413,
+      "question_id": 77946658,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/77946658/loading-millions-of-metadata-as-a-cache-from-bigquery-to-enrich-streaming-events",
+      "title": "Loading millions of metadata as a cache from BigQuery to enrich streaming events in Dataflow"
+    },
+    {
+      "tags": [
+        "sql-server",
+        "google-cloud-dataflow",
+        "apache-beam",
+        "google-cloud-data-fusion"
+      ],
+      "owner": {
+        "account_id": 30406464,
+        "reputation": 1,
+        "user_id": 23301580,
+        "user_type": "registered",
+        "profile_image": "https://www.gravatar.com/avatar/8ee3033838b04fa898fe208c924317ba?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Adri&#224;",
+        "link": "https://stackoverflow.com/users/23301580/adri%c3%a0"
+      },
+      "is_answered": false,
+      "view_count": 59,
+      "answer_count": 1,
+      "score": 0,
+      "last_activity_date": 1707240438,
+      "creation_date": 1706261740,
+      "last_edit_date": 1706306743,
+      "question_id": 77885279,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/77885279/not-able-to-connect-sql-server-with-gc-data-fusion",
+      "title": "Not able to connect SQL Server with GC Data Fusion"
+    },
+    {
+      "tags": [
+        "python",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 10674644,
+        "reputation": 79,
+        "user_id": 7858604,
+        "user_type": "registered",
+        "accept_rate": 44,
+        "profile_image": "https://lh5.googleusercontent.com/-25ow5Rfc5VE/AAAAAAAAAAI/AAAAAAAAISk/_29sZvzNrFs/photo.jpg?sz=256",
+        "display_name": "Sebastian Hanania",
+        "link": "https://stackoverflow.com/users/7858604/sebastian-hanania"
+      },
+      "is_answered": false,
+      "view_count": 112,
+      "answer_count": 1,
+      "score": 0,
+      "last_activity_date": 1707237273,
+      "creation_date": 1706752201,
+      "question_id": 77917321,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/77917321/how-to-sequentially-run-a-single-pipeline-in-apache-beam-that-write-and-read-dat",
+      "title": "How to sequentially run a single pipeline in apache beam that write and read data"
+    },
+    {
+      "tags": [
+        "apache",
+        "google-cloud-platform",
+        "google-cloud-dataflow",
+        "apache-beam"
+      ],
+      "owner": {
+        "account_id": 11924933,
+        "reputation": 2860,
+        "user_id": 8726488,
+        "user_type": "registered",
+        "accept_rate": 67,
+        "profile_image": "https://www.gravatar.com/avatar/94ca22e55ad1afcddfa00bfbe9aab049?s=256&d=identicon&r=PG&f=y&so-version=2",
+        "display_name": "Learn Hadoop",
+        "link": "https://stackoverflow.com/users/8726488/learn-hadoop"
+      },
+      "is_answered": false,
+      "view_count": 40,
+      "answer_count": 1,
+      "score": 0,
+      "last_activity_date": 1707233320,
+      "creation_date": 1707159535,
+      "last_edit_date": 1707195638,
+      "question_id": 77943354,
+      "content_license": "CC BY-SA 4.0",
+      "link": "https://stackoverflow.com/questions/77943354/gcp-dataflow-how-to-validate-pcollection-data-present-in-lookup-table-biq-que",
+      "title": "GCP dataflow - How to validate PCollection data present in lookup table (biq query table)"
+    }
+  ],
+  "has_more": true,
+  "quota_max": 10000,
+  "quota_remaining": 9991
+}
