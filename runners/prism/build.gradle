@@ -30,6 +30,7 @@ def jobPortFlag = "job_port"
 
 // buildTarget is the go build output target path for the Prism service.
 def buildTarget = layout.buildDirectory.get().file("tmp/prism")
+ext.set('buildTarget', buildTarget)
 
 // modDir is the path containing the go.mod file.
 def modDir = project.rootDir.toPath().resolve("sdks")
