@@ -1,258 +1,253 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.beam.runners.prism;
 
-import org.apache.beam.sdk.util.ReleaseInfo;
-import org.apache.beam.vendor.grpc.v1p60p1.com.google.common.base.Strings;
-import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.io.ByteStreams;
+import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
+import static org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.Preconditions.checkArgument;
+import static org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.Preconditions.checkState;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import org.apache.beam.sdk.util.ReleaseInfo;
+import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.Splitter;
+import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.Strings;
+import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.hash.HashCode;
+import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.hash.Hashing;
+import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.io.ByteStreams;
 
-import static org.apache.beam.sdk.util.Preconditions.checkStateNotNull;
-
+/**
+ * Locates a Prism executable based on a user's default operating system and architecture
+ * environment or a {@link PrismPipelineOptions#getPrismLocation()} override. Handles the download,
+ * unzip, {@link PosixFilePermissions}, as needed. For {@link #GITHUB_DOWNLOAD_PREFIX} sources,
+ * additionally performs a SHA512 verification.
+ */
 class PrismLocator {
-    static final String OS_NAME_PROPERTY = "os.name";
-    static final String ARCH_PROPERTY = "os.arch";
-    static final String USER_HOME_PROPERTY = "user.home";
+  static final String OS_NAME_PROPERTY = "os.name";
+  static final String ARCH_PROPERTY = "os.arch";
+  static final String USER_HOME_PROPERTY = "user.home";
 
-    private static final String ZIP_EXT = "zip";
-    private static final String SHA512_EXT = "sha512";
-    private static final Pattern ZIP_EXT_PATTERN = Pattern.compile("^(.*)\\.zip$");
-    private static final ReleaseInfo RELEASE_INFO = ReleaseInfo.getReleaseInfo();
-    private static final String PRISM_BIN_PATH = ".apache_beam/cache/prism/bin";
-    private static final String GITHUB_DOWNLOAD_PREFIX = "https://github.com/apache/beam/releases/download/";
-    private static final String GITHUB_TAG_PREFIX = "https://github.com/apache/beam/releases/tag/";
+  private static final String ZIP_EXT = "zip";
+  private static final String SHA512_EXT = "sha512";
+  private static final ReleaseInfo RELEASE_INFO = ReleaseInfo.getReleaseInfo();
+  private static final String PRISM_BIN_PATH = ".apache_beam/cache/prism/bin";
+  private static final Set<PosixFilePermission> PERMS =
+      PosixFilePermissions.fromString("rwxr-xr-x");
+  private static final String GITHUB_DOWNLOAD_PREFIX =
+      "https://github.com/apache/beam/releases/download";
+  private static final String GITHUB_TAG_PREFIX = "https://github.com/apache/beam/releases/tag";
 
-    private final PrismPipelineOptions options;
+  private final PrismPipelineOptions options;
 
-    PrismLocator(PrismPipelineOptions options) {
-        this.options = options;
+  PrismLocator(PrismPipelineOptions options) {
+    this.options = options;
+  }
+
+  /**
+   * Downloads and prepares a Prism executable for use with the {@link PrismRunner}, executed by the
+   * {@link PrismExecutor}. The returned {@link String} is the absolute path to the Prism
+   * executable.
+   */
+  String resolve() throws IOException {
+
+    String from =
+        String.format("%s/v%s/%s.zip", GITHUB_DOWNLOAD_PREFIX, getSDKVersion(), buildFileName());
+
+    if (!Strings.isNullOrEmpty(options.getPrismLocation())) {
+      checkArgument(
+          !options.getPrismLocation().startsWith(GITHUB_TAG_PREFIX),
+          "Provided --prismLocation URL is not an Apache Beam Github "
+              + "Release page URL or download URL: ",
+          from);
+
+      from = options.getPrismLocation();
     }
 
-    String resolve() {
-        Goal goal = buildGoal();
-        for (GoalVisitor visitor : Arrays.asList(
-                new DownloadVisitor(),
-                new ZipVisitor(),
-                new CopyVisitor(),
-                new ValidateVisitor()
-        )) {
-            goal = visitor.visit(goal);
-        }
-        return goal.to.toString();
+    String fromFileName = getNameWithoutExtension(from);
+    Path to = Paths.get(userHome(), PRISM_BIN_PATH, fromFileName);
+
+    if (Files.exists(to)) {
+      return to.toString();
     }
 
-    Goal buildGoal() {
-        Path from = buildGoalFrom();
-        Path to = buildGoalTo();
-        return new Goal(from, to);
+    createDirectoryIfNeeded(to);
+
+    if (from.startsWith("http")) {
+      String result = resolve(new URL(from), to);
+      checkState(Files.exists(to), "Resolved location does not exist: %s", result);
+      return result;
     }
 
-    String buildFileName(String... extensions) {
-        String version = getSDKVersion();
-        String resultWithoutExtension = String.format("apache_beam-v%s-prism-%s-%s", version, os(), arch());
-        if (extensions.length == 0) {
-            return resultWithoutExtension;
-        }
-        return resultWithoutExtension + "." + String.join(".", extensions);
+    String result = resolve(Paths.get(from), to);
+    checkState(Files.exists(to), "Resolved location does not exist: %s", result);
+    return result;
+  }
+
+  private String resolve(URL from, Path to) throws IOException {
+    if (from.toString().startsWith(GITHUB_DOWNLOAD_PREFIX)) {
+      URL shaSumReference = new URL(from + "." + SHA512_EXT);
+      validateShaSum512(shaSumReference, from);
     }
 
-    private String getSDKVersion() {
-        if (Strings.isNullOrEmpty(options.getPrismVersionOverride())) {
-            return RELEASE_INFO.getSdkVersion();
-        }
-        return options.getPrismVersionOverride();
+    BiConsumer<URL, Path> downloadFn = PrismLocator::download;
+    if (from.getPath().endsWith(ZIP_EXT)) {
+      downloadFn = PrismLocator::unzip;
+    }
+    downloadFn.accept(from, to);
+
+    Files.setPosixFilePermissions(to, PERMS);
+
+    return to.toString();
+  }
+
+  private String resolve(Path from, Path to) throws IOException {
+
+    BiConsumer<InputStream, Path> copyFn = PrismLocator::copy;
+    if (from.endsWith(ZIP_EXT)) {
+      copyFn = PrismLocator::unzip;
     }
 
-    Path buildExpectedLocalPath() {
-        return Paths.get(userHome(), PRISM_BIN_PATH, buildFileName());
+    copyFn.accept(from.toUri().toURL().openStream(), to);
+    ByteStreams.copy(from.toUri().toURL().openStream(), Files.newOutputStream(to));
+    Files.setPosixFilePermissions(to, PERMS);
+
+    return to.toString();
+  }
+
+  String buildFileName() {
+    String version = getSDKVersion();
+    return String.format("apache_beam-v%s-prism-%s-%s", version, os(), arch());
+  }
+
+  private static void unzip(URL from, Path to) {
+    try {
+      unzip(from.openStream(), to);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+  }
 
-    private Path buildGoalFrom() {
-        if (Strings.isNullOrEmpty(options.getPrismLocation())) {
-            return buildDefaultDownloadPath();
-        }
-        return Paths.get(options.getPrismLocation());
+  private static void unzip(InputStream from, Path to) {
+    try (OutputStream out = Files.newOutputStream(to)) {
+      ZipInputStream zis = new ZipInputStream(from);
+      for (ZipEntry entry = zis.getNextEntry(); entry != null; entry = zis.getNextEntry()) {
+        InputStream in = ByteStreams.limit(zis, entry.getSize());
+        ByteStreams.copy(in, out);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+  }
 
-    private Path buildGoalTo() {
-        if (Strings.isNullOrEmpty(options.getPrismLocation())) {
-            return buildExpectedLocalPath();
-        }
-
-        Path path = Paths.get(options.getPrismLocation());
-        if (!Files.isRegularFile(path)) {
-            return buildExpectedLocalPath();
-        }
-
-        return path;
+  private static void copy(InputStream from, Path to) {
+    try {
+      ByteStreams.copy(from, Files.newOutputStream(to));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+  }
 
-    private Path buildDefaultDownloadPath() {
-        return Paths.get(GITHUB_DOWNLOAD_PREFIX, buildFileName(ZIP_EXT));
+  private static void download(URL from, Path to) {
+    try {
+      ByteStreams.copy(from.openStream(), Files.newOutputStream(to));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+  }
 
-    private static String os() {
-        return mustGetPropertyAsLowerCase(OS_NAME_PROPERTY);
+  private static void validateShaSum512(URL shaSumReference, URL source) throws IOException {
+    try (InputStream in = shaSumReference.openStream()) {
+      String rawContent = new String(ByteStreams.toByteArray(in), StandardCharsets.UTF_8);
+      checkState(!Strings.isNullOrEmpty(rawContent));
+      String reference = "";
+      Iterator<String> split = Splitter.onPattern("\\s+").split(rawContent).iterator();
+      if (split.hasNext()) {
+        reference = split.next();
+      }
+      checkState(!Strings.isNullOrEmpty(reference));
+
+      HashCode toVerify = Hashing.sha512().hashBytes(ByteStreams.toByteArray(source.openStream()));
+      checkState(
+          reference.equals(toVerify.toString()),
+          "Expected sha512 derived from: %s does not equal expected: %s, got: %s",
+          source,
+          reference,
+          toVerify.toString());
     }
+  }
 
-    private static String arch() {
-        return mustGetPropertyAsLowerCase(ARCH_PROPERTY);
+  private static String getNameWithoutExtension(String path) {
+    return org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.io.Files
+        .getNameWithoutExtension(path);
+  }
+
+  private String getSDKVersion() {
+    if (Strings.isNullOrEmpty(options.getPrismVersionOverride())) {
+      return RELEASE_INFO.getSdkVersion();
     }
+    return options.getPrismVersionOverride();
+  }
 
-    private static String userHome() {
-        return mustGetPropertyAsLowerCase(USER_HOME_PROPERTY);
+  private static String os() {
+    String result = mustGetPropertyAsLowerCase(OS_NAME_PROPERTY);
+    if (result.contains("mac")) {
+      return "darwin";
     }
+    return result;
+  }
 
-    private static String mustGetPropertyAsLowerCase(String name) {
-        return checkStateNotNull(System.getProperty(name), "System property: " + name + " not set").toLowerCase();
+  private static String arch() {
+    String result = mustGetPropertyAsLowerCase(ARCH_PROPERTY);
+    if (result.contains("aarch")) {
+      return "arm64";
     }
+    return result;
+  }
 
-    interface GoalVisitor {
-        Goal visit(Goal goal);
+  private static String userHome() {
+    return mustGetPropertyAsLowerCase(USER_HOME_PROPERTY);
+  }
+
+  private static String mustGetPropertyAsLowerCase(String name) {
+    return checkStateNotNull(System.getProperty(name), "System property: " + name + " not set")
+        .toLowerCase();
+  }
+
+  private static void createDirectoryIfNeeded(Path path) throws IOException {
+    Path parent = path.getParent();
+    if (parent == null) {
+      return;
     }
-
-    static class Goal {
-        private final Path from;
-        private final Path to;
-
-        Goal(Path from, Path path) {
-            this.from = from;
-            to = path;
-        }
-
-        Path getFrom() {
-            return from;
-        }
-
-        Path getTo() {
-            return to;
-        }
+    if (parent.toFile().exists()) {
+      return;
     }
-
-    static class DownloadVisitor implements GoalVisitor {
-        @Override
-        public Goal visit(Goal goal) {
-
-            if (!isHttp(goal.from)) {
-                return goal;
-            }
-
-            try {
-                createDirectoryIfNeeded(goal.to);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            copy(goal.from, goal.to);
-
-            if (!goal.from.startsWith(GITHUB_DOWNLOAD_PREFIX)) {
-                return goal;
-            }
-
-            String fromWithSha512 = goal.from + "." + SHA512_EXT;
-            String toWithSha512 = goal.to + "." + SHA512_EXT;
-            copy(Paths.get(fromWithSha512), Paths.get(toWithSha512));
-
-            String to = goal.to.toString();
-            Matcher matcher = ZIP_EXT_PATTERN.matcher(to);
-            if (matcher.matches()) {
-                to = matcher.replaceAll("");
-            }
-
-            return new Goal(goal.to, Paths.get(to));
-        }
-    }
-
-    static class CopyVisitor implements GoalVisitor {
-        @Override
-        public Goal visit(Goal goal) {
-            if (isHttp(goal.from)) {
-                return goal;
-            }
-            if (!goal.from.toFile().exists()) {
-                throw new RuntimeException("file: " + goal.from.toFile() + " does not exist");
-            }
-            try {
-                createDirectoryIfNeeded(goal.to);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            copy(goal.from, goal.to);
-
-            return goal;
-        }
-    }
-
-    static class ZipVisitor implements GoalVisitor {
-        @Override
-        public Goal visit(Goal goal) {
-            if (isHttp(goal.from)) {
-                return goal;
-            }
-            try {
-                ZipInputStream in = new ZipInputStream(goal.from.toUri().toURL().openStream());
-                FileOutputStream out = new FileOutputStream(goal.to.toFile());
-                ByteStreams.copy(in, out);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            return goal;
-        }
-    }
-
-    static class ValidateVisitor implements GoalVisitor {
-        @Override
-        public Goal visit(Goal goal) {
-            return goal;
-//            File file = path.toFile();
-//            if (!file.exists()) {
-//                throw new IllegalStateException("Prism location does not exist: " + file.getAbsolutePath());
-//            }
-        }
-    }
-
-    private static boolean isHttp(Path path) {
-        return path.startsWith("http");
-    }
-
-    private static void createDirectoryIfNeeded(Path path) throws IOException {
-        if (isHttp(path)) {
-            return;
-        }
-        Path parent = path.getParent();
-        if (parent == null) {
-            return;
-        }
-        if (parent.toFile().exists()) {
-            return;
-        }
-        Files.createDirectory(parent);
-    }
-
-    private static void copy(Path from, Path to) {
-        if (from.startsWith(GITHUB_TAG_PREFIX)) {
-            throw new RuntimeException("URL: " + from + " is not an Apache Beam GitHub Release page URL or download URL.");
-        }
-        try {
-            try(InputStream in = from.toUri().toURL().openStream();
-                FileOutputStream out = new FileOutputStream(to.toFile())
-            ) {
-                ByteStreams.copy(in, out);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    Files.createDirectories(parent);
+  }
 }

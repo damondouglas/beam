@@ -17,53 +17,52 @@
  */
 package org.apache.beam.runners.prism;
 
+import static com.google.common.truth.Truth.assertThat;
+import static org.junit.Assume.assumeTrue;
+
+import java.io.IOException;
 import org.apache.beam.sdk.Pipeline;
-import org.apache.beam.sdk.options.PipelineOptions;
+import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.transforms.PeriodicImpulse;
 import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.base.Strings;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static org.junit.Assume.assumeTrue;
-
+/** Tests for {@link PrismRunner}. */
 @RunWith(JUnit4.class)
 public class PrismRunnerTest {
   // See build.gradle for test task configuration.
   static final String PRISM_BUILD_TARGET_PROPERTY_NAME = "prism.buildTarget";
 
-
-  private static final PipelineOptions OPTIONS = PipelineOptionsFactory.create();
-
-  static {
-    OPTIONS.setRunner(PrismRunner.class);
+  @Test
+  public void givenBoundedSource_runsUntilDone() {
+    Pipeline pipeline = Pipeline.create(options());
+    pipeline.apply(Create.of(1, 2, 3));
+    PipelineResult.State state = pipeline.run().waitUntilFinish();
+    assertThat(state).isEqualTo(PipelineResult.State.DONE);
   }
 
   @Test
-  public void givenUnboundedSource_runsUntilCancel() {}
-
-  @Test
-  public void givenBoundedSource_runsUntilSourceReadDone() {
-    Pipeline pipeline = Pipeline.create(OPTIONS);
-    pipeline.apply(Create.of("a", "b", "c"));
-    pipeline.run();
+  public void givenUnboundedSource_runsUntilCancel() throws IOException {
+    Pipeline pipeline = Pipeline.create(options());
+    pipeline.apply(PeriodicImpulse.create());
+    PipelineResult result = pipeline.run();
+    assertThat(result.getState()).isEqualTo(PipelineResult.State.RUNNING);
+    PipelineResult.State state = result.cancel();
+    assertThat(state).isEqualTo(PipelineResult.State.CANCELLED);
   }
 
-  @Test
-  public void pipelineResultReportsJobState() {}
+  private static PrismPipelineOptions options() {
+    PrismPipelineOptions opts = PipelineOptionsFactory.create().as(PrismPipelineOptions.class);
 
-  @Test
-  public void givenDefaultWaitUntilFinish_threadBlocks() {}
+    opts.setRunner(PrismRunner.class);
+    opts.setPrismLocation(getLocalPrismBuildOrIgnoreTest());
 
-  @Test
-  public void givenDefaultWaitUntilFinishWithTimestamp_threadBlockedUntilTimeout() {}
-
-  @Test
-  public void givenCancelInvoked_thenPipelineCancels() {}
-
-  @Test
-  public void givenDrainInvoked_thenPipelineDrains() {}
+    return opts;
+  }
 
   /**
    * Drives ignoring of tests via checking {@link org.junit.Assume#assumeTrue} that the {@link
@@ -72,11 +71,10 @@ public class PrismRunnerTest {
   static String getLocalPrismBuildOrIgnoreTest() {
     String command = System.getProperty(PRISM_BUILD_TARGET_PROPERTY_NAME);
     assumeTrue(
-            "System property: "
-                    + PRISM_BUILD_TARGET_PROPERTY_NAME
-                    + " is not set; see build.gradle for test task configuration",
-            !Strings.isNullOrEmpty(command));
+        "System property: "
+            + PRISM_BUILD_TARGET_PROPERTY_NAME
+            + " is not set; see build.gradle for test task configuration",
+        !Strings.isNullOrEmpty(command));
     return command;
   }
-
 }

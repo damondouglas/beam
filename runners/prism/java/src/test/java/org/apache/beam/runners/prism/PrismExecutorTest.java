@@ -19,7 +19,6 @@ package org.apache.beam.runners.prism;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.apache.beam.runners.prism.PrismRunnerTest.getLocalPrismBuildOrIgnoreTest;
-import static org.junit.Assume.assumeTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

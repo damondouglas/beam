@@ -20,6 +20,10 @@ package org.apache.beam.runners.prism;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PortablePipelineOptions;
 
+/**
+ * {@link org.apache.beam.sdk.options.PipelineOptions} for running a {@link
+ * org.apache.beam.sdk.Pipeline} on the {@link PrismRunner}.
+ */
 public interface PrismPipelineOptions extends PortablePipelineOptions {
   @Description(
       "Path or URL to a prism binary, or zipped binary for the current "

@@ -32,12 +32,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import org.apache.beam.vendor.grpc.v1p60p1.com.google.common.io.ByteStreams;
+import org.apache.beam.vendor.guava.v32_1_2_jre.com.google.common.io.ByteStreams;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * {@link PrismExecutor} builds and executes a {@link ProcessBuilder} for use by the {@link
+ * PrismRunner}. Prism is a {@link org.apache.beam.runners.portability.PortableRunner} maintained at
+ * <a href="https://github.com/apache/beam/tree/master/sdks/go/cmd/prism">sdks/go/cmd/prism</a>.
+ */
 @AutoValue
 abstract class PrismExecutor {
 
@@ -54,10 +59,15 @@ abstract class PrismExecutor {
   /** The command to execute the Prism binary. */
   abstract String getCommand();
 
-  /** Additional arguments to pass when invoking the Prism binary. */
+  /**
+   * Additional arguments to pass when invoking the Prism binary. Defaults to an {@link
+   * Collections#emptyList()}.
+   */
   abstract List<String> getArguments();
 
+  /** Stops the execution of the {@link Process}, created as a result of {@link #execute}. */
   void stop() {
+    LOG.info("Stopping Prism...");
     if (future != null) {
       future.cancel(true);
     }
@@ -79,10 +89,17 @@ abstract class PrismExecutor {
     }
   }
 
+  /**
+   * Execute the {@link ProcessBuilder} that starts the Prism service. Redirects output to STDOUT.
+   */
   void execute() throws IOException {
     execute(createProcessBuilder().inheritIO());
   }
 
+  /**
+   * Execute the {@link ProcessBuilder} that starts the Prism service. Redirects output to the
+   * {@param outputStream}.
+   */
   void execute(OutputStream outputStream) throws IOException {
     execute(createProcessBuilder().redirectErrorStream(true));
     this.future =
@@ -96,6 +113,10 @@ abstract class PrismExecutor {
             });
   }
 
+  /**
+   * Execute the {@link ProcessBuilder} that starts the Prism service. Redirects output to the
+   * {@param file}.
+   */
   void execute(File file) throws IOException {
     execute(
         createProcessBuilder()
