@@ -32,5 +32,23 @@ dependencies {
     testImplementation project(path: ":sdks:java:core", configuration: "shadowTest")
     testImplementation library.java.junit
     testRuntimeOnly project(path: ":runners:direct-java", configuration: "shadow")
+    testImplementation project(path: ":runners:google-cloud-dataflow-java")
+    testImplementation project(path: ":sdks:java:io:google-cloud-platform")
+    testImplementation project(path: ":sdks:java:extensions:google-cloud-platform-core")
     testImplementation project(path: ":sdks:java:io:common")
 }
+
+// Don't include this in the PR :-)
+//tasks.register("loadTest", JavaExec) {
+//    mainClass = "org.apache.beam.sdk.io.csv.CsvIOParseLoadIT"
+//    classpath = sourceSets.test.runtimeClasspath
+//    args(
+//            "--logOutput=false",
+//            "--size=10000000",
+//            "--runner=Dataflow",
+//            "--project=",
+//            "--region=us-central1",
+//            "--serviceAccount=",
+//            "--usePublicIps=false"
+//    )
+//}
