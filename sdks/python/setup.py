@@ -459,7 +459,10 @@ if __name__ == '__main__':
               # --extra-index-url or --index-url in requirements.txt in
               # Dataflow, which allows installing python packages from private
               # Python repositories in GAR.
-              'keyrings.google-artifactregistry-auth'
+              'keyrings.google-artifactregistry-auth',
+              # Packages required for Looker connector
+              'google-cloud-secret-manager>=2.20.2,<3',
+              'looker-sdk>=24.16.2,<25'
           ],
           'interactive': [
               'facets-overview>=1.1.0,<2',
