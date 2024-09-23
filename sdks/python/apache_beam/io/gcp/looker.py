@@ -73,12 +73,12 @@ shows the use of the Beam Looker connector for executing an "inline" query.
             query_timezone = 'America/Los_Angeles'
         )
     ])
-    results = requests | beam.io.looker.RunInlineQuery(format='json', credentials=credentials)
+    results = requests | beam.io.looker.RunInlineQueries(result_format='json', credentials=credentials)
 
 The Looker API supports the
 `creation of queries <https://cloud.google.com/looker/docs/reference/looker-api/latest/methods/Query/create_query>`
 to be executed later. Using the Beam Looker connector, a developer may execute a stored query. The following
-example illustrates a synchronyous query.
+example illustrates a synchronous query.
 
     import looker_sdk
     from looker_sdk import models40 as models
@@ -151,16 +151,15 @@ current state of the data.
     requests = p | beam.Create([look.id])
     results = requests | beam.io.looker.RunLooks(format='png', credentials=credentials)
 """
-import abc
-import contextlib
 import logging
-from typing import Union, cast, TypedDict
+from typing import Union, TypeVar
 
 from looker_sdk.rtl.api_settings import SettingsConfig
+from looker_sdk.sdk.api40 import models
 
-# from apache_beam.io.requestresponse import Caller
-# from apache_beam.io.requestresponse import RequestResponseIO
-# from apache_beam.io.requestresponse import UserCodeExecutionException
+import apache_beam as beam
+from apache_beam.io.requestresponse import Caller, RequestT, ResponseT
+from apache_beam.io.requestresponse import RequestResponseIO
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -261,3 +260,99 @@ class GoogleSecretManagerCredentials(api_settings.ApiSettings):
 
     def __exit__(self, __exc_type, __exc_value, __traceback):
         return None
+
+
+Query = TypeVar('Query', bound=models.WriteQuery)
+
+
+class _RunInLineQueryFn(Caller[Query, str]):
+
+    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
+        self.result_format = result_format
+        self.credentials = credentials
+        self.sdk: Union[looker_sdk.methods40.Looker40SDK, None]
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        return None
+
+    def __enter__(self):
+        self.sdk = looker_sdk.init40(config_settings=self.credentials)
+
+    def __call__(self, request: Query, *args, **kwargs) -> str:
+        return self.sdk.run_inline_query(result_format=self.result_format, body=request)
+
+
+class RunInlineQueries(beam.PTransform):
+
+    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
+        self.result_format = result_format
+        self.credentials = credentials
+        super().__init__()
+
+    def expand(self, input_or_inputs: beam.PCollection[Query]) -> beam.PCollection[str]:
+        return input_or_inputs | RequestResponseIO(_RunInLineQueryFn(self.result_format, self.credentials))
+
+
+class _RunQueryFn(Caller[str, str]):
+    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
+        self.result_format = result_format
+        self.credentials = credentials
+        self.sdk: Union[looker_sdk.methods40.Looker40SDK, None]
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        return None
+
+    def __enter__(self):
+        self.sdk = looker_sdk.init40(config_settings=self.credentials)
+
+    def __call__(self, request: str, *args, **kwargs) -> str:
+        return self.sdk.run_query(query_id=request, result_format=self.result_format)
+
+
+class RunQueries(beam.PTransform):
+
+    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
+        self.result_format = result_format
+        self.credentials = credentials
+        self.sdk: Union[looker_sdk.methods40.Looker40SDK, None]
+        super().__init__()
+
+    def __enter__(self):
+        self.sdk = looker_sdk.init40(config_settings=self.credentials)
+
+    def expand(self, input_or_inputs: beam.PCollection[str]) -> beam.PCollection[str]:
+        return input_or_inputs | RequestResponseIO(_RunQueryFn(self.result_format, self.credentials))
+
+
+class RunQueriesAsync(beam.PTransform):
+    def expand(self, input_or_inputs: beam.PCollection[str]) -> beam.PCollection[str]:
+        raise NotImplemented("RunQueriesAsync not yet implemented")
+
+
+class _RunLooksFn(Caller[str, str]):
+    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
+        self.result_format = result_format
+        self.credentials = credentials
+        self.sdk: Union[looker_sdk.methods40.Looker40SDK, None]
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        return None
+
+    def __enter__(self):
+        self.sdk = looker_sdk.init40(config_settings=self.credentials)
+
+    def __call__(self, request: str, *args, **kwargs) -> str:
+        return self.sdk.run_look(result_format=self.result_format, look_id=request)
+
+
+class RunLooks(beam.PTransform):
+
+    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
+        self.result_format = result_format
+        self.credentials = credentials
+        self.sdk: Union[looker_sdk.methods40.Looker40SDK, None]
+        super().__init__()
+
+    def expand(self, input_or_inputs: beam.PCollection[str]) -> beam.PCollection[str]:
+        return input_or_inputs | RequestResponseIO(_RunLooksFn(self.result_format, self.credentials))
+
