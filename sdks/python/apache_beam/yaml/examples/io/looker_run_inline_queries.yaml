@@ -24,7 +24,9 @@ pipeline:
           - {model: "apache-beam-testing_public_looker_explores_us", view: "public_us_io_performance_metrics", fields: ["public_us_io_performance_metrics.io", "public_us_io_performance_metrics.sdk", "public_us_io_performance_metrics.read_or_write"]}
     - type: LookerRunInlineQueries
       config:
-        gcp_secret_version_storing_looker_api_settings_ini: projects/734338615676/secrets/looker-api/versions/1
+        config_settings:
+          gcp:
+            secret_manager_version: projects/734338615676/secrets/looker-api/versions/latest
         result_format: json
     - type: LogForTesting
       input: list_available_performance_metrics
