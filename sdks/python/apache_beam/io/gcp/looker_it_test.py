@@ -3,7 +3,11 @@ import time
 import unittest
 
 import apache_beam as beam
-from apache_beam.io.gcp.looker import GoogleSecretManagerCredentials, RunInlineQueries, RunQueries, RunLooks
+from apache_beam.io.gcp.looker import GoogleSecretManagerCredentials
+from apache_beam.io.gcp.looker import ResultFormat
+from apache_beam.io.gcp.looker import RunInlineQueries
+from apache_beam.io.gcp.looker import RunQueries
+from apache_beam.io.gcp.looker import RunLooks
 
 try:
     import google.cloud.secretmanager_v1 as secretmanager
@@ -45,7 +49,7 @@ class TestRunInlineQueries(unittest.TestCase):
 
         queries = pipeline | beam.Create([_QUERY])
 
-        result = queries | RunInlineQueries(result_format='json', credentials=_CREDENTIALS)
+        result = queries | RunInlineQueries(result_format=ResultFormat.JSON, credentials=_CREDENTIALS)
         pipeline_result = pipeline.run()
         pipeline_result.wait_until_finish()
         self.assertIsNotNone(result)
@@ -59,7 +63,7 @@ class TestRunQueries(unittest.TestCase):
         pipeline = beam.Pipeline()
         query_ids = pipeline | beam.Create([query.id])
 
-        result = query_ids | RunQueries(result_format='json', credentials=_CREDENTIALS)
+        result = query_ids | RunQueries(result_format=ResultFormat.JSON, credentials=_CREDENTIALS)
         pipeline_result = pipeline.run()
         pipeline_result.wait_until_finish()
         self.assertIsNotNone(result)
@@ -80,8 +84,7 @@ class TestRunLooks(unittest.TestCase):
 
         pipeline = beam.Pipeline()
         look_ids = pipeline | beam.Create([look.id])
-        result = look_ids | RunLooks(result_format='csv', credentials=_CREDENTIALS)
-        result | beam.Map(print)
+        result = look_ids | RunLooks(result_format=ResultFormat.PNG, credentials=_CREDENTIALS)
 
         pipeline_result = pipeline.run()
         pipeline_result.wait_until_finish()

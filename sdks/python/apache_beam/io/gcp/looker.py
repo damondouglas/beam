@@ -151,6 +151,7 @@ current state of the data.
     requests = p | beam.Create([look.id])
     results = requests | beam.io.looker.RunLooks(format='png', credentials=credentials)
 """
+from enum import Enum
 import logging
 from typing import Union, TypeVar
 
@@ -174,6 +175,11 @@ except ImportError:
 
 __all__ = [
     'GoogleSecretManagerCredentials',
+    'ResultFormat',
+    'RunInlineQueries',
+    'RunQueries',
+    'RunQueriesAsync',
+    'RunLooks',
 ]
 
 
@@ -262,13 +268,27 @@ class GoogleSecretManagerCredentials(api_settings.ApiSettings):
         return None
 
 
+class ResultFormat(Enum):
+    JSON = 'json'
+    JSON_BI = 'json_bi'
+    CSV = 'csv'
+    TXT = 'txt'
+    HTML = 'html'
+    MD = 'md'
+    XLSX = 'xlsx'
+    SQL = 'sql'
+    PNG = 'png'
+    JPG = 'jpg'
+
+
 Query = TypeVar('Query', bound=models.WriteQuery)
+LookerResponse = TypeVar('LookerResponse', str, bytes)
 
 
-class _RunInLineQueryFn(Caller[Query, str]):
+class _RunInLineQueryFn(Caller[Query, LookerResponse]):
 
-    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
-        self.result_format = result_format
+    def __init__(self, result_format: ResultFormat, credentials: api_settings.ApiSettings):
+        self.result_format = result_format.value
         self.credentials = credentials
         self.sdk: Union[looker_sdk.methods40.Looker40SDK, None]
 
@@ -278,24 +298,26 @@ class _RunInLineQueryFn(Caller[Query, str]):
     def __enter__(self):
         self.sdk = looker_sdk.init40(config_settings=self.credentials)
 
-    def __call__(self, request: Query, *args, **kwargs) -> str:
+    def __call__(self, request: Query, *args, **kwargs) -> LookerResponse:
         return self.sdk.run_inline_query(result_format=self.result_format, body=request)
 
 
 class RunInlineQueries(beam.PTransform):
 
-    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
+    def __init__(self, result_format: ResultFormat, credentials: api_settings.ApiSettings):
         self.result_format = result_format
         self.credentials = credentials
         super().__init__()
 
-    def expand(self, input_or_inputs: beam.PCollection[Query]) -> beam.PCollection[str]:
-        return input_or_inputs | RequestResponseIO(_RunInLineQueryFn(self.result_format, self.credentials))
+    def expand(self, input_or_inputs: beam.PCollection[Query]) -> beam.PCollection[LookerResponse]:
+        return input_or_inputs | "RunInlineQueries" >> RequestResponseIO(
+            _RunInLineQueryFn(self.result_format, self.credentials)
+        )
 
 
-class _RunQueryFn(Caller[str, str]):
-    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
-        self.result_format = result_format
+class _RunQueryFn(Caller[str, LookerResponse]):
+    def __init__(self, result_format: ResultFormat, credentials: api_settings.ApiSettings):
+        self.result_format = result_format.value
         self.credentials = credentials
         self.sdk: Union[looker_sdk.methods40.Looker40SDK, None]
 
@@ -305,13 +327,13 @@ class _RunQueryFn(Caller[str, str]):
     def __enter__(self):
         self.sdk = looker_sdk.init40(config_settings=self.credentials)
 
-    def __call__(self, request: str, *args, **kwargs) -> str:
+    def __call__(self, request: str, *args, **kwargs) -> LookerResponse:
         return self.sdk.run_query(query_id=request, result_format=self.result_format)
 
 
 class RunQueries(beam.PTransform):
 
-    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
+    def __init__(self, result_format: ResultFormat, credentials: api_settings.ApiSettings):
         self.result_format = result_format
         self.credentials = credentials
         self.sdk: Union[looker_sdk.methods40.Looker40SDK, None]
@@ -320,18 +342,20 @@ class RunQueries(beam.PTransform):
     def __enter__(self):
         self.sdk = looker_sdk.init40(config_settings=self.credentials)
 
-    def expand(self, input_or_inputs: beam.PCollection[str]) -> beam.PCollection[str]:
-        return input_or_inputs | RequestResponseIO(_RunQueryFn(self.result_format, self.credentials))
+    def expand(self, input_or_inputs: beam.PCollection[str]) -> beam.PCollection[LookerResponse]:
+        return input_or_inputs | "RunQueries" >> RequestResponseIO(
+            _RunQueryFn(self.result_format, self.credentials)
+        )
 
 
 class RunQueriesAsync(beam.PTransform):
-    def expand(self, input_or_inputs: beam.PCollection[str]) -> beam.PCollection[str]:
+    def expand(self, input_or_inputs: beam.PCollection[str]) -> beam.PCollection[LookerResponse]:
         raise NotImplemented("RunQueriesAsync not yet implemented")
 
 
-class _RunLooksFn(Caller[str, str]):
-    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
-        self.result_format = result_format
+class _RunLooksFn(Caller[str, LookerResponse]):
+    def __init__(self, result_format: ResultFormat, credentials: api_settings.ApiSettings):
+        self.result_format = result_format.value
         self.credentials = credentials
         self.sdk: Union[looker_sdk.methods40.Looker40SDK, None]
 
@@ -341,18 +365,19 @@ class _RunLooksFn(Caller[str, str]):
     def __enter__(self):
         self.sdk = looker_sdk.init40(config_settings=self.credentials)
 
-    def __call__(self, request: str, *args, **kwargs) -> str:
+    def __call__(self, request: str, *args, **kwargs) -> LookerResponse:
         return self.sdk.run_look(result_format=self.result_format, look_id=request)
 
 
 class RunLooks(beam.PTransform):
 
-    def __init__(self, result_format: str, credentials: api_settings.ApiSettings):
+    def __init__(self, result_format: ResultFormat, credentials: api_settings.ApiSettings):
         self.result_format = result_format
         self.credentials = credentials
         self.sdk: Union[looker_sdk.methods40.Looker40SDK, None]
         super().__init__()
 
-    def expand(self, input_or_inputs: beam.PCollection[str]) -> beam.PCollection[str]:
-        return input_or_inputs | RequestResponseIO(_RunLooksFn(self.result_format, self.credentials))
-
+    def expand(self, input_or_inputs: beam.PCollection[str]) -> beam.PCollection[LookerResponse]:
+        return input_or_inputs | "RunLooks" >> RequestResponseIO(
+            _RunLooksFn(self.result_format, self.credentials)
+        )
