@@ -43,6 +43,7 @@ from apache_beam.io import ReadFromBigQuery
 from apache_beam.io import WriteToBigQuery
 from apache_beam.io import avroio
 from apache_beam.io.gcp.bigquery import BigQueryDisposition
+from apache_beam.io.gcp.looker import RunInlineQueries, ResultFormat
 from apache_beam.portability.api import schema_pb2
 from apache_beam.typehints import schemas
 from apache_beam.yaml import json_utils
@@ -51,10 +52,10 @@ from apache_beam.yaml import yaml_provider
 
 
 def read_from_text(path: str):
-  # TODO(yaml): Consider passing the filename and offset, possibly even
-  # by default.
+    # TODO(yaml): Consider passing the filename and offset, possibly even
+    # by default.
 
-  """Reads lines from a text files.
+    """Reads lines from a text files.
 
   The resulting PCollection consists of rows with a single string filed named
   "line."
@@ -63,12 +64,12 @@ def read_from_text(path: str):
     path (str): The file path to read from.  The path can contain glob
       characters such as ``*`` and ``?``.
   """
-  return beam_io.ReadFromText(path) | beam.Map(lambda s: beam.Row(line=s))
+    return beam_io.ReadFromText(path) | beam.Map(lambda s: beam.Row(line=s))
 
 
 @beam.ptransform_fn
 def write_to_text(pcoll, path: str):
-  """Writes a PCollection to a (set of) text files(s).
+    """Writes a PCollection to a (set of) text files(s).
 
   The input must be a PCollection whose schema has exactly one field.
 
@@ -76,30 +77,30 @@ def write_to_text(pcoll, path: str):
       path (str): The file path to write to. The files written will
         begin with this prefix, followed by a shard identifier.
   """
-  try:
-    field_names = [
-        name for name,
-        _ in schemas.named_fields_from_element_type(pcoll.element_type)
-    ]
-  except Exception as exn:
-    raise ValueError(
-        "WriteToText requires an input schema with exactly one field.") from exn
-  if len(field_names) != 1:
-    raise ValueError(
-        "WriteToText requires an input schema with exactly one field, got %s" %
-        field_names)
-  sole_field_name, = field_names
-  return pcoll | beam.Map(
-      lambda x: str(getattr(x, sole_field_name))) | beam.io.WriteToText(path)
+    try:
+        field_names = [
+            name for name,
+            _ in schemas.named_fields_from_element_type(pcoll.element_type)
+        ]
+    except Exception as exn:
+        raise ValueError(
+            "WriteToText requires an input schema with exactly one field.") from exn
+    if len(field_names) != 1:
+        raise ValueError(
+            "WriteToText requires an input schema with exactly one field, got %s" %
+            field_names)
+    sole_field_name, = field_names
+    return pcoll | beam.Map(
+        lambda x: str(getattr(x, sole_field_name))) | beam.io.WriteToText(path)
 
 
 def read_from_bigquery(
-    *,
-    table: Optional[str] = None,
-    query: Optional[str] = None,
-    row_restriction: Optional[str] = None,
-    fields: Optional[Iterable[str]] = None):
-  """Reads data from BigQuery.
+        *,
+        table: Optional[str] = None,
+        query: Optional[str] = None,
+        row_restriction: Optional[str] = None,
+        fields: Optional[Iterable[str]] = None):
+    """Reads data from BigQuery.
 
   Exactly one of table or query must be set.
   If query is set, neither row_restriction nor fields should be set.
@@ -117,26 +118,26 @@ def read_from_bigquery(
       selected. The output field order is unrelated to the order of fields
       given here.
   """
-  if query is None:
-    assert table is not None
-  else:
-    assert table is None and row_restriction is None and fields is None
-  return ReadFromBigQuery(
-      query=query,
-      table=table,
-      row_restriction=row_restriction,
-      selected_fields=fields,
-      method='DIRECT_READ',
-      output_type='BEAM_ROW')
+    if query is None:
+        assert table is not None
+    else:
+        assert table is None and row_restriction is None and fields is None
+    return ReadFromBigQuery(
+        query=query,
+        table=table,
+        row_restriction=row_restriction,
+        selected_fields=fields,
+        method='DIRECT_READ',
+        output_type='BEAM_ROW')
 
 
 def write_to_bigquery(
-    table: str,
-    *,
-    create_disposition: Optional[str] = BigQueryDisposition.CREATE_IF_NEEDED,
-    write_disposition: Optional[str] = BigQueryDisposition.WRITE_APPEND,
-    error_handling=None):
-  f"""Writes data to a BigQuery table.
+        table: str,
+        *,
+        create_disposition: Optional[str] = BigQueryDisposition.CREATE_IF_NEEDED,
+        write_disposition: Optional[str] = BigQueryDisposition.WRITE_APPEND,
+        error_handling=None):
+    f"""Writes data to a BigQuery table.
 
   Args:
     table (str): The table to read from, specified as `DATASET.TABLE`
@@ -168,129 +169,128 @@ def write_to_bigquery(
         described at https://beam.apache.org/documentation/sdks/yaml-errors/
         Otherwise permanently failing records will cause pipeline failure.
   """
-  class WriteToBigQueryHandlingErrors(beam.PTransform):
-    def default_label(self):
-      return 'WriteToBigQuery'
 
-    def expand(self, pcoll):
-      write_result = pcoll | WriteToBigQuery(
-          table,
-          method=WriteToBigQuery.Method.STORAGE_WRITE_API
-          if error_handling else None,
-          create_disposition=create_disposition,
-          write_disposition=write_disposition,
-          temp_file_format='AVRO')
-      if error_handling and 'output' in error_handling:
-        # TODO: Support error rates.
-        return {
-            'post_write': write_result.failed_rows_with_errors
-            | beam.FlatMap(lambda x: None),
-            error_handling['output']: write_result.failed_rows_with_errors
-        }
-      else:
-        if write_result._method == WriteToBigQuery.Method.FILE_LOADS:
-          # Never returns errors, just fails.
-          return {
-              'post_write': write_result.destination_load_jobid_pairs
-              | beam.FlatMap(lambda x: None)
-          }
-        else:
+    class WriteToBigQueryHandlingErrors(beam.PTransform):
+        def default_label(self):
+            return 'WriteToBigQuery'
 
-          # This should likely be pushed into the BQ read itself to avoid
-          # the possibility of silently ignoring errors.
-          def raise_exception(failed_row_with_error):
-            raise RuntimeError(failed_row_with_error.error_message)
+        def expand(self, pcoll):
+            write_result = pcoll | WriteToBigQuery(
+                table,
+                method=WriteToBigQuery.Method.STORAGE_WRITE_API
+                if error_handling else None,
+                create_disposition=create_disposition,
+                write_disposition=write_disposition,
+                temp_file_format='AVRO')
+            if error_handling and 'output' in error_handling:
+                # TODO: Support error rates.
+                return {
+                    'post_write': write_result.failed_rows_with_errors
+                                  | beam.FlatMap(lambda x: None),
+                    error_handling['output']: write_result.failed_rows_with_errors
+                }
+            else:
+                if write_result._method == WriteToBigQuery.Method.FILE_LOADS:
+                    # Never returns errors, just fails.
+                    return {
+                        'post_write': write_result.destination_load_jobid_pairs
+                                      | beam.FlatMap(lambda x: None)
+                    }
+                else:
 
-          _ = write_result.failed_rows_with_errors | beam.Map(raise_exception)
-          return {
-              'post_write': write_result.failed_rows_with_errors
-              | beam.FlatMap(lambda x: None)
-          }
+                    # This should likely be pushed into the BQ read itself to avoid
+                    # the possibility of silently ignoring errors.
+                    def raise_exception(failed_row_with_error):
+                        raise RuntimeError(failed_row_with_error.error_message)
 
-  return WriteToBigQueryHandlingErrors()
+                    _ = write_result.failed_rows_with_errors | beam.Map(raise_exception)
+                    return {
+                        'post_write': write_result.failed_rows_with_errors
+                                      | beam.FlatMap(lambda x: None)
+                    }
+
+    return WriteToBigQueryHandlingErrors()
 
 
 def _create_parser(
-    format,
-    schema: Any) -> Tuple[schema_pb2.Schema, Callable[[bytes], beam.Row]]:
+        format,
+        schema: Any) -> Tuple[schema_pb2.Schema, Callable[[bytes], beam.Row]]:
+    format = format.upper()
 
-  format = format.upper()
+    def _validate_schema():
+        if not schema:
+            raise ValueError(
+                f'{format} format requires valid {format} schema to be passed to '
+                f'schema parameter.')
 
-  def _validate_schema():
-    if not schema:
-      raise ValueError(
-          f'{format} format requires valid {format} schema to be passed to '
-          f'schema parameter.')
-
-  if format == 'RAW':
-    if schema:
-      raise ValueError('RAW format does not take a schema')
-    return (
-        schema_pb2.Schema(fields=[schemas.schema_field('payload', bytes)]),
-        lambda payload: beam.Row(payload=payload))
-  elif format == 'JSON':
-    _validate_schema()
-    beam_schema = json_utils.json_schema_to_beam_schema(schema)
-    return beam_schema, json_utils.json_parser(beam_schema, schema)
-  elif format == 'AVRO':
-    _validate_schema()
-    beam_schema = avroio.avro_schema_to_beam_schema(schema)
-    covert_to_row = avroio.avro_dict_to_beam_row(schema, beam_schema)
-    # pylint: disable=line-too-long
-    return (
-        beam_schema,
-        lambda record: covert_to_row(
-            fastavro.schemaless_reader(io.BytesIO(record), schema)))  # type: ignore[call-arg]
-  else:
-    raise ValueError(f'Unknown format: {format}')
+    if format == 'RAW':
+        if schema:
+            raise ValueError('RAW format does not take a schema')
+        return (
+            schema_pb2.Schema(fields=[schemas.schema_field('payload', bytes)]),
+            lambda payload: beam.Row(payload=payload))
+    elif format == 'JSON':
+        _validate_schema()
+        beam_schema = json_utils.json_schema_to_beam_schema(schema)
+        return beam_schema, json_utils.json_parser(beam_schema, schema)
+    elif format == 'AVRO':
+        _validate_schema()
+        beam_schema = avroio.avro_schema_to_beam_schema(schema)
+        covert_to_row = avroio.avro_dict_to_beam_row(schema, beam_schema)
+        # pylint: disable=line-too-long
+        return (
+            beam_schema,
+            lambda record: covert_to_row(
+                fastavro.schemaless_reader(io.BytesIO(record), schema)))  # type: ignore[call-arg]
+    else:
+        raise ValueError(f'Unknown format: {format}')
 
 
 def _create_formatter(
-    format, schema: Any,
-    beam_schema: schema_pb2.Schema) -> Callable[[beam.Row], bytes]:
+        format, schema: Any,
+        beam_schema: schema_pb2.Schema) -> Callable[[beam.Row], bytes]:
+    if format.islower():
+        format = format.upper()
+        logging.warning('Lowercase formats will be deprecated in version 2.60')
 
-  if format.islower():
-    format = format.upper()
-    logging.warning('Lowercase formats will be deprecated in version 2.60')
+    if format == 'RAW':
+        if schema:
+            raise ValueError('RAW format does not take a schema')
+        field_names = [field.name for field in beam_schema.fields]
+        if len(field_names) != 1:
+            raise ValueError(f'Expecting exactly one field, found {field_names}')
+        return lambda row: getattr(row, field_names[0])
+    elif format == 'JSON':
+        return json_utils.json_formater(beam_schema)
+    elif format == 'AVRO':
+        avro_schema = schema or avroio.beam_schema_to_avro_schema(beam_schema)
+        from_row = avroio.beam_row_to_avro_dict(avro_schema, beam_schema)
 
-  if format == 'RAW':
-    if schema:
-      raise ValueError('RAW format does not take a schema')
-    field_names = [field.name for field in beam_schema.fields]
-    if len(field_names) != 1:
-      raise ValueError(f'Expecting exactly one field, found {field_names}')
-    return lambda row: getattr(row, field_names[0])
-  elif format == 'JSON':
-    return json_utils.json_formater(beam_schema)
-  elif format == 'AVRO':
-    avro_schema = schema or avroio.beam_schema_to_avro_schema(beam_schema)
-    from_row = avroio.beam_row_to_avro_dict(avro_schema, beam_schema)
+        def formatter(row):
+            buffer = io.BytesIO()
+            fastavro.schemaless_writer(buffer, avro_schema, from_row(row))
+            buffer.seek(0)
+            return buffer.read()
 
-    def formatter(row):
-      buffer = io.BytesIO()
-      fastavro.schemaless_writer(buffer, avro_schema, from_row(row))
-      buffer.seek(0)
-      return buffer.read()
-
-    return formatter
-  else:
-    raise ValueError(f'Unknown format: {format}')
+        return formatter
+    else:
+        raise ValueError(f'Unknown format: {format}')
 
 
 @beam.ptransform_fn
 @yaml_mapping.maybe_with_exception_handling_transform_fn
 def read_from_pubsub(
-    root,
-    *,
-    topic: Optional[str] = None,
-    subscription: Optional[str] = None,
-    format: str,
-    schema: Optional[Any] = None,
-    attributes: Optional[Iterable[str]] = None,
-    attributes_map: Optional[str] = None,
-    id_attribute: Optional[str] = None,
-    timestamp_attribute: Optional[str] = None):
-  """Reads messages from Cloud Pub/Sub.
+        root,
+        *,
+        topic: Optional[str] = None,
+        subscription: Optional[str] = None,
+        format: str,
+        schema: Optional[Any] = None,
+        attributes: Optional[Iterable[str]] = None,
+        attributes_map: Optional[str] = None,
+        id_attribute: Optional[str] = None,
+        timestamp_attribute: Optional[str] = None):
+    """Reads messages from Cloud Pub/Sub.
 
   Args:
     topic: Cloud Pub/Sub topic in the form
@@ -339,61 +339,61 @@ def read_from_pubsub(
         timestamp is optional, and digits beyond the first three (i.e., time
         units smaller than milliseconds) may be ignored.
   """
-  if topic and subscription:
-    raise TypeError('Only one of topic and subscription may be specified.')
-  elif not topic and not subscription:
-    raise TypeError('One of topic or subscription may be specified.')
-  payload_schema, parser = _create_parser(format, schema)
-  extra_fields: List[schema_pb2.Field] = []
-  if not attributes and not attributes_map:
-    mapper = lambda msg: parser(msg)
-  else:
-    if isinstance(attributes, str):
-      attributes = [attributes]
-    if attributes:
-      extra_fields.extend(
-          [schemas.schema_field(attr, str) for attr in attributes])
-    if attributes_map:
-      extra_fields.append(
-          schemas.schema_field(attributes_map, Mapping[str, str]))
+    if topic and subscription:
+        raise TypeError('Only one of topic and subscription may be specified.')
+    elif not topic and not subscription:
+        raise TypeError('One of topic or subscription may be specified.')
+    payload_schema, parser = _create_parser(format, schema)
+    extra_fields: List[schema_pb2.Field] = []
+    if not attributes and not attributes_map:
+        mapper = lambda msg: parser(msg)
+    else:
+        if isinstance(attributes, str):
+            attributes = [attributes]
+        if attributes:
+            extra_fields.extend(
+                [schemas.schema_field(attr, str) for attr in attributes])
+        if attributes_map:
+            extra_fields.append(
+                schemas.schema_field(attributes_map, Mapping[str, str]))
 
-    def mapper(msg):
-      values = parser(msg.data).as_dict()
-      if attributes:
-        # Should missing attributes be optional or parse errors?
-        for attr in attributes:
-          values[attr] = msg.attributes[attr]
-      if attributes_map:
-        values[attributes_map] = msg.attributes
-      return beam.Row(**values)
+        def mapper(msg):
+            values = parser(msg.data).as_dict()
+            if attributes:
+                # Should missing attributes be optional or parse errors?
+                for attr in attributes:
+                    values[attr] = msg.attributes[attr]
+            if attributes_map:
+                values[attributes_map] = msg.attributes
+            return beam.Row(**values)
 
-  output = (
-      root
-      | beam.io.ReadFromPubSub(
-          topic=topic,
-          subscription=subscription,
-          with_attributes=bool(attributes or attributes_map),
-          id_label=id_attribute,
-          timestamp_attribute=timestamp_attribute)
-      | 'ParseMessage' >> beam.Map(mapper))
-  output.element_type = schemas.named_tuple_from_schema(
-      schema_pb2.Schema(fields=list(payload_schema.fields) + extra_fields))
-  return output
+    output = (
+            root
+            | beam.io.ReadFromPubSub(
+        topic=topic,
+        subscription=subscription,
+        with_attributes=bool(attributes or attributes_map),
+        id_label=id_attribute,
+        timestamp_attribute=timestamp_attribute)
+            | 'ParseMessage' >> beam.Map(mapper))
+    output.element_type = schemas.named_tuple_from_schema(
+        schema_pb2.Schema(fields=list(payload_schema.fields) + extra_fields))
+    return output
 
 
 @beam.ptransform_fn
 @yaml_mapping.maybe_with_exception_handling_transform_fn
 def write_to_pubsub(
-    pcoll,
-    *,
-    topic: str,
-    format: str,
-    schema: Optional[Any] = None,
-    attributes: Optional[Iterable[str]] = None,
-    attributes_map: Optional[str] = None,
-    id_attribute: Optional[str] = None,
-    timestamp_attribute: Optional[str] = None):
-  """Writes messages to Cloud Pub/Sub.
+        pcoll,
+        *,
+        topic: str,
+        format: str,
+        schema: Optional[Any] = None,
+        attributes: Optional[Iterable[str]] = None,
+        attributes_map: Optional[str] = None,
+        id_attribute: Optional[str] = None,
+        timestamp_attribute: Optional[str] = None):
+    """Writes messages to Cloud Pub/Sub.
 
   Args:
     topic: Cloud Pub/Sub topic in the form "/topics/<project>/<topic>".
@@ -430,49 +430,60 @@ def write_to_pubsub(
     timestamp_attribute: If set, will set an attribute for each Cloud Pub/Sub
       message with the given name and the message's publish time as the value.
   """
-  input_schema = schemas.schema_from_element_type(pcoll.element_type)
+    input_schema = schemas.schema_from_element_type(pcoll.element_type)
 
-  extra_fields: List[str] = []
-  if isinstance(attributes, str):
-    attributes = [attributes]
-  if attributes:
-    extra_fields.extend(attributes)
-  if attributes_map:
-    extra_fields.append(attributes_map)
-
-  def attributes_extractor(row):
-    if attributes_map:
-      attribute_values = dict(getattr(row, attributes_map))
-    else:
-      attribute_values = {}
+    extra_fields: List[str] = []
+    if isinstance(attributes, str):
+        attributes = [attributes]
     if attributes:
-      attribute_values.update({attr: getattr(row, attr) for attr in attributes})
-    return attribute_values
+        extra_fields.extend(attributes)
+    if attributes_map:
+        extra_fields.append(attributes_map)
 
-  schema_names = set(f.name for f in input_schema.fields)
-  missing_attribute_names = set(extra_fields) - schema_names
-  if missing_attribute_names:
-    raise ValueError(
-        f'Attribute fields {missing_attribute_names} '
-        f'not found in schema fields {schema_names}')
+    def attributes_extractor(row):
+        if attributes_map:
+            attribute_values = dict(getattr(row, attributes_map))
+        else:
+            attribute_values = {}
+        if attributes:
+            attribute_values.update({attr: getattr(row, attr) for attr in attributes})
+        return attribute_values
 
-  payload_schema = schema_pb2.Schema(
-      fields=[
-          field for field in input_schema.fields
-          if field.name not in extra_fields
-      ])
-  formatter = _create_formatter(format, schema, payload_schema)
-  return (
-      pcoll | beam.Map(
-          lambda row: beam.io.gcp.pubsub.PubsubMessage(
-              formatter(row), attributes_extractor(row)))
-      | beam.io.WriteToPubSub(
-          topic,
-          with_attributes=True,
-          id_label=id_attribute,
-          timestamp_attribute=timestamp_attribute))
+    schema_names = set(f.name for f in input_schema.fields)
+    missing_attribute_names = set(extra_fields) - schema_names
+    if missing_attribute_names:
+        raise ValueError(
+            f'Attribute fields {missing_attribute_names} '
+            f'not found in schema fields {schema_names}')
+
+    payload_schema = schema_pb2.Schema(
+        fields=[
+            field for field in input_schema.fields
+            if field.name not in extra_fields
+        ])
+    formatter = _create_formatter(format, schema, payload_schema)
+    return (
+            pcoll | beam.Map(
+        lambda row: beam.io.gcp.pubsub.PubsubMessage(
+            formatter(row), attributes_extractor(row)))
+            | beam.io.WriteToPubSub(
+        topic,
+        with_attributes=True,
+        id_label=id_attribute,
+        timestamp_attribute=timestamp_attribute))
+
+
+@beam.ptransform_fn
+def looker_run_inline_queries(
+        pcoll: beam.pvalue.PCollection,
+        gcp_secret_version_storing_looker_api_settings_ini: str,
+        result_format: str,
+):
+    print(gcp_secret_version_storing_looker_api_settings_ini)
+    print(result_format)
+    return pcoll
 
 
 def io_providers():
-  with open(os.path.join(os.path.dirname(__file__), 'standard_io.yaml')) as fin:
-    return yaml_provider.parse_providers(yaml.load(fin, Loader=yaml.SafeLoader))
+    with open(os.path.join(os.path.dirname(__file__), 'standard_io.yaml')) as fin:
+        return yaml_provider.parse_providers(yaml.load(fin, Loader=yaml.SafeLoader))

@@ -101,3 +101,10 @@
         Explode: "beam:schematransform:org.apache.beam:yaml:explode:v1"
       config:
         gradle_target: 'sdks:java:extensions:sql:expansion-service:shadowJar'
+
+- type: 'python'
+  config:
+    gcp_secret_version_storing_looker_api_settings_ini: str
+    result_format: str
+  transforms:
+    LookerRunInlineQueries: 'apache_beam.yaml.yaml_io.looker_run_inline_queries'
