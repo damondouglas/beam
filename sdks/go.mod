@@ -60,7 +60,7 @@ require (
 	golang.org/x/text v0.18.0
 	google.golang.org/api v0.197.0
 	google.golang.org/genproto v0.0.0-20240903143218-8af14fe29dc1
-	google.golang.org/grpc v1.66.1
+	google.golang.org/grpc v1.67.1
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -69,7 +69,6 @@ require (
 require (
 	github.com/avast/retry-go/v4 v4.6.0
 	github.com/fsouza/fake-gcs-server v1.49.2
-	github.com/golang/protobuf v1.5.4
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 )
 
