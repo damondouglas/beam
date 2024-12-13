@@ -22,7 +22,10 @@ import org.apache.beam.sdk.annotations.Internal;
 
 /**
  * Category tag for validation tests which utilize {@link TestPipeline} for execution and expect to
- * be executed by a {@link PipelineRunner}.
+ * be executed by a {@link PipelineRunner}. This exists historically when Beam's build system
+ * depended on maven because the SDK cannot depend on the Runner but the Runner depends on the SDK.
+ * This is different from {@link ValidatesRunner} that involves tests that require execution of a
+ * pipeline.
  */
 @Internal
 public interface NeedsRunner {}
