@@ -17,6 +17,7 @@ package expansionx
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -219,33 +220,50 @@ func TestGetJar_dev(t *testing.T) {
 }
 
 func TestGetPythonVersion(t *testing.T) {
+	whichPy, err := exec.LookPath("python3")
+	if err != nil {
+		t.Fatalf("failed to find python, got %v", err)
+	}
 	tests := []struct {
-		name        string
-		PYTHON_PATH string
+		name      string
+		setPyPath string
+		want      string
+		wantErr   bool
 	}{
 		{
-			name:        "PYTHON_PATH set",
-			PYTHON_PATH: "/bin/python",
+			name:      "PYTHON_PATH set",
+			setPyPath: whichPy,
+			want:      whichPy,
 		},
 		{
-			name:        "PYTHON_PATH not set",
-			PYTHON_PATH: "",
+			name:      "PYTHON_PATH not set",
+			setPyPath: "",
+			want:      whichPy,
+		},
+		{
+			name:      "PYTHON_PATH does not exist",
+			setPyPath: "/does/not/exist/python",
+			wantErr:   true,
 		},
 	}
 
-	for _, test := range tests {
-		if test.PYTHON_PATH != "" {
-			os.Setenv("PYTHON_PATH", test.PYTHON_PATH)
-		}
-		pythonVersion, err := GetPythonVersion()
-		if err != nil {
-			t.Errorf("python installation not found: %v, when PYTHON_PATH=%v", err, test.PYTHON_PATH)
-		}
-		if test.PYTHON_PATH != "" && pythonVersion != test.PYTHON_PATH {
-			t.Errorf("incorrect PYTHON_PATH, want: %v, got: %v", test.PYTHON_PATH, pythonVersion)
-		}
-		if test.PYTHON_PATH != "" {
-			os.Unsetenv(test.PYTHON_PATH)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			defer os.Unsetenv(pyPathEnv)
+			if tt.setPyPath != "" {
+				os.Setenv(pyPathEnv, tt.setPyPath)
+			}
+			got, err := GetPythonVersion()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("python installation not found: %v, when %s=%v", err, pyPathEnv, tt.setPyPath)
+				return
+			}
+			if tt.wantErr {
+				return
+			}
+			if got != whichPy {
+				t.Errorf("incorrect python interpreter found, want: %v, got: %v", tt.setPyPath, got)
+			}
+		})
 	}
 }

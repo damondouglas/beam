@@ -49,6 +49,7 @@ const (
 	beamGroupID      = "org/apache/beam"
 	cacheDir         = "~/.apache_beam/cache"
 	jarCache         = cacheDir + "/jars"
+	pyPathEnv        = "PYTHON_PATH"
 )
 
 func newJarGetter() *jarGetter {
@@ -382,23 +383,37 @@ func jarExists(jarPath string) bool {
 	return err == nil
 }
 
-// GetPythonVersion returns the Python version to use. It checks for
-// env variable PYTHON_PATH and returns that it if set.
-// If no PYTHON_PATH is defined then it checks for python or python3
-// and returns that. Otherwise it returns an error.
+// GetPythonVersion returns the Python path to the executable, after attempting its execution with the --version flag.
+// It first checks for env variable setPyPath, otherwise uses exec.LookPath.
 func GetPythonVersion() (string, error) {
-	if pythonPath := os.Getenv("PYTHON_PATH"); pythonPath != "" {
-		return pythonPath, nil
+	pyPath, err := whichPython()
+	if err != nil {
+		return "", fmt.Errorf("no python installation found: %w", err)
+	}
+
+	cmd := exec.Command(pyPath, "--version")
+	err = cmd.Run()
+	if err != nil {
+		helper := fmt.Sprintf("If you use a custom container image, please check if python/python3 is indeed available at %s or specify the full pyPath to the python interpreter in %s environment variable", pyPath, pyPathEnv)
+		return pyPath, fmt.Errorf("error validating python installation: %w\n%s", err, helper)
+	}
+
+	return pyPath, nil
+}
+
+func whichPython() (string, error) {
+	var result string
+	var err error
+	if result = os.Getenv(pyPathEnv); result != "" {
+		return result, nil
 	}
 	for _, v := range []string{"python", "python3"} {
-		cmd := exec.Command(v, "--version")
-		if err := cmd.Run(); err == nil {
-			return v, nil
+		result, err = exec.LookPath(v)
+		if err == nil {
+			return result, nil
 		}
 	}
-	return "", errors.New("no python installation found. If you use a " +
-		"custom container image, please check if python/python3 is available or specify the " +
-		"full path to the python interpreter in PYTHON_PATH environment variable")
+	return result, err
 }
 
 // SetUpPythonEnvironment sets up the virtual ennvironment required for the
