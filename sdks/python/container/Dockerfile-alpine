@@ -58,7 +58,9 @@ RUN \
    apk add cmake && \
    apk add libarrow && \
    apk add apache-arrow-dev && \
-   pip install pyarrow
+   git clone https://github.com/apache/arrow.git && \
+   cd arrow/python && \
+   python setup.py install
 
 RUN pip install apache_beam[gcp]
 
