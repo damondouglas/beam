@@ -26,7 +26,6 @@ LABEL Author="Apache Beam <dev@beam.apache.org>"
 
 FROM python:${TAG} AS final
 
-#COPY sdks/python/container/py310/build/target/base_image_requirements.txt /tmp/base_image_requirements.txt
 # Contains the boot entrypoint and related files such as licenses.
 COPY --from=base /opt /opt
 
