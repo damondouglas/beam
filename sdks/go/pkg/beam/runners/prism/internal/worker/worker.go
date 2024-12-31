@@ -21,12 +21,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"google.golang.org/grpc"
 	"io"
 	"log/slog"
 	"net"
 	"sync"
 	"sync/atomic"
+
+	"google.golang.org/grpc"
 
 	"github.com/apache/beam/sdks/v2/go/pkg/beam/core"
 	"github.com/apache/beam/sdks/v2/go/pkg/beam/core/graph/coder"
@@ -673,7 +674,8 @@ type MultiplexW struct {
 	pool     map[string]*W
 }
 
-func NewMultiplexW(lis net.Listener, g *grpc.Server, logger *slog.Logger) *MultiplexW {
+// New instantiates a new MultiplexW for multiplexing FnAPI requests to a W.
+func New(lis net.Listener, g *grpc.Server, logger *slog.Logger) *MultiplexW {
 	_, p, _ := net.SplitHostPort(lis.Addr().String())
 	mw := &MultiplexW{
 		endpoint: "localhost:" + p,
@@ -690,7 +692,10 @@ func NewMultiplexW(lis net.Listener, g *grpc.Server, logger *slog.Logger) *Multi
 	return mw
 }
 
-func (mw *MultiplexW) NewWorker(id, env string) *W {
+// MakeWorker creates and registers a W, assigning id and env to W.ID and W.Env, respectively.
+// MultiplexW expects FnAPI gRPC requests to contain a matching 'worker_id' in its context metadata.
+// A gRPC client should use the grpcx.WriteWorkerID helper method prior to sending the request.
+func (mw *MultiplexW) MakeWorker(id, env string) *W {
 	w := &W{
 		ID:  id,
 		Env: env,
@@ -745,7 +750,14 @@ func (mw *MultiplexW) workerFromMetadataCtx(ctx context.Context) (*W, error) {
 	if err != nil {
 		return nil, err
 	}
-	return mw.pool[id], nil
+	if id == "" {
+		return nil, fmt.Errorf("worker_id read from context metadata is an empty string")
+	}
+	w, ok := mw.pool[id]
+	if !ok {
+		return nil, fmt.Errorf("worker_id: '%s' read from context metadata but not registered in worker pool", id)
+	}
+	return w, nil
 }
 
 func handleUnary[Request any, Response any, Method func(*W, context.Context, *Request) (*Response, error)](mw *MultiplexW, ctx context.Context, req *Request, m Method) (*Response, error) {

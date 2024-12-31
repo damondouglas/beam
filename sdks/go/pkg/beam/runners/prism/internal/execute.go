@@ -54,7 +54,7 @@ func RunPipeline(j *jobservices.Job) {
 	wks := map[string]*worker.W{}
 	for envID := range envs {
 		wk := j.MakeWorker(envID)
-		wks[wk.ID] = wk
+		wks[envID] = wk
 		if err := runEnvironment(j.RootCtx, j, envID, wk); err != nil {
 			j.Failed(fmt.Errorf("failed to start environment %v for job %v: %w", envID, j, err))
 			return

@@ -106,7 +106,7 @@ func dockerEnvironment(ctx context.Context, logger *slog.Logger, dp *pipepb.Dock
 	logger = logger.With("worker_id", wk.ID, "image", dp.GetContainerImage())
 
 	// TODO consider preserving client?
-	cli, err := dcli.NewClientWithOpts(dcli.FromEnv, dcli.WithAPIVersionNegotiation())
+	cli, err := dcli.NewClientWithOpts(dcli.FromEnv, dcli.WithAPIVersionNegotiation(), dcli.WithHostFromEnv())
 	if err != nil {
 		return fmt.Errorf("couldn't connect to docker:%w", err)
 	}
@@ -147,7 +147,7 @@ func dockerEnvironment(ctx context.Context, logger *slog.Logger, dp *pipepb.Dock
 	ccr, err := cli.ContainerCreate(ctx, &container.Config{
 		Image: dp.GetContainerImage(),
 		Cmd: []string{
-			fmt.Sprintf("--id=%v-%v", wk.JobKey, wk.Env),
+			fmt.Sprintf("--id=%v", wk.ID),
 			fmt.Sprintf("--control_endpoint=%v", wk.Endpoint()),
 			fmt.Sprintf("--artifact_endpoint=%v", artifactEndpoint),
 			fmt.Sprintf("--provision_endpoint=%v", wk.Endpoint()),

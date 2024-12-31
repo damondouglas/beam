@@ -202,7 +202,7 @@ func (j *Job) Failed(err error) {
 }
 
 func (j *Job) MakeWorker(env string) *worker.W {
-	wk := j.mw.NewWorker(j.String()+"_"+env, env)
+	wk := j.mw.MakeWorker(j.String()+"_"+env, env)
 	wk.EnvPb = j.Pipeline.GetComponents().GetEnvironments()[env]
 	wk.PipelineOptions = j.PipelineOptions()
 	wk.JobKey = j.JobKey()
