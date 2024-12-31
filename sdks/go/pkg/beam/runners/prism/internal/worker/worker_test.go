@@ -18,6 +18,9 @@ package worker
 import (
 	"bytes"
 	"context"
+	"github.com/apache/beam/sdks/v2/go/pkg/beam/util/grpcx"
+	"google.golang.org/grpc/metadata"
+	"log/slog"
 	"net"
 	"sort"
 	"sync"
@@ -34,18 +37,17 @@ import (
 	"github.com/apache/beam/sdks/v2/go/pkg/beam/runners/prism/internal/engine"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/test/bufconn"
 )
 
 func TestWorker_New(t *testing.T) {
-	w := New("test", "testEnv")
+	w := newWorker()
 	if got, want := w.ID, "test"; got != want {
 		t.Errorf("New(%q) = %v, want %v", want, got, want)
 	}
 }
 
 func TestWorker_NextInst(t *testing.T) {
-	w := New("test", "testEnv")
+	w := newWorker()
 
 	instIDs := map[string]struct{}{}
 	for i := 0; i < 100; i++ {
@@ -57,7 +59,7 @@ func TestWorker_NextInst(t *testing.T) {
 }
 
 func TestWorker_GetProcessBundleDescriptor(t *testing.T) {
-	w := New("test", "testEnv")
+	w := newWorker()
 
 	id := "available"
 	w.Descriptors[id] = &fnpb.ProcessBundleDescriptor{
@@ -87,19 +89,22 @@ func serveTestWorker(t *testing.T) (context.Context, *W, *grpc.ClientConn) {
 	ctx, cancelFn := context.WithCancel(context.Background())
 	t.Cleanup(cancelFn)
 
-	w := New("test", "testEnv")
-	lis := bufconn.Listen(2048)
-	w.lis = lis
-	t.Cleanup(func() { w.Stop() })
-	go w.Serve()
-
-	clientConn, err := grpc.DialContext(ctx, "", grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
-		return lis.DialContext(ctx)
-	}), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	g := grpc.NewServer()
+	lis, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mw := NewMultiplexW(lis, g, slog.Default())
+	t.Cleanup(func() { g.Stop() })
+	go g.Serve(lis)
+	w := mw.NewWorker("test", "testEnv")
+	ctx = metadata.NewIncomingContext(ctx, metadata.Pairs("worker_id", w.ID))
+	ctx = grpcx.WriteWorkerID(ctx, w.ID)
+	conn, err := grpc.NewClient(w.Endpoint(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		t.Fatal("couldn't create bufconn grpc connection:", err)
 	}
-	return ctx, w, clientConn
+	return ctx, w, conn
 }
 
 type closeSend func()
@@ -464,4 +469,11 @@ func TestWorker_State_MultimapSideInput(t *testing.T) {
 			}
 		})
 	}
+}
+
+func newWorker() *W {
+	mw := &MultiplexW{
+		pool: map[string]*W{},
+	}
+	return mw.NewWorker("test", "testEnv")
 }
