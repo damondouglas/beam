@@ -277,7 +277,29 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Push docker images
         run: ./gradlew :pushAllDockerImages -PisRelease -Pdocker-pull-licenses -Pprune-images -Pdocker-tag=${{ github.event.inputs.RELEASE }}rc${{ github.event.inputs.RC }} --no-daemon --no-parallel
-
+      - name: Build/push Java distroless images
+        run: |
+          java_versions=("java17" "java21")
+          for java_version in "${java_versions[@]}"; do
+            docker buildx build --push \
+            -t apache/beam_${java_version}_sdk_distroless:${{ github.event.inputs.RELEASE }} \
+            -t apache/beam_${java_version}_sdk_distroless:latest \
+            -f sdks/java/container/Dockerfile-distroless \
+            --build-arg=BEAM_BASE=apache/beam_${java_version}_sdk:${BEAM_VERSION} \
+            --build-arg=DISTROLESS_BASE=gcr.io/distroless/${java_version}-debian12 \
+            .
+          done
+      - name: Build/push Python distroless images
+        run: |
+          python_versions=("", "")
+          for python_version in "$(python_versions[@]"; do
+            docker buildx build --push \
+              -t apache/beam_${python_version}_sdk_distroless:${{ github.event.inputs.RELEASE }} \
+              -t apache/beam_${java_version}_sdk_distroless:latest \
+              -f sdks/python/container/Dockerfile-distroless \
+              --build-arg=BASE=apache/beam_${python_version}_sdk:${{ github.event.inputs.RELEASE }} \
+              .
+          done
   beam_site_pr:
     if:  ${{ fromJson(github.event.inputs.STAGE).beam_site_pr == 'yes'}}
     # Note: if this ever changes to self-hosted, remove the "Remove default github maven configuration" step
